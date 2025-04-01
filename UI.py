@@ -1,38 +1,108 @@
-from kivy.app import App
-from kivy.uix.button import Button
-from kivy.graphics import Color, Rectangle
-from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
+from kivy.metrics import dp
+from kivy.properties import StringProperty
+from kivy.lang import Builder
 
-class LoginScreen(FloatLayout):
-    def __init__(self, **kwargs):
-        super(LoginScreen, self).__init__(**kwargs)
-        self.add_widget(Label(text='[color=ff3333]User Name'))
-        #self.username = TextInput(multiline=False,
-         #                         size_hint=(10, 10),
-          #                        pos_hint={'center_x': .5, 'center_y':.5})
-        #self.add_widget(self.username)
-        #self.add_widget(Label(text='Password'))
-        #self.password = TextInput(password=True, multiline=False)
-        #self.add_widget(self.password)
+from kivymd.uix.fitimage import FitImage
+from kivymd.uix.screen import MDScreen
+from kivymd.uix.screenmanager import MDScreenManager
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.navigationbar.navigationbar import (
+    MDNavigationBar,
+    MDNavigationItem,
+    MDNavigationItemLabel,
+    MDNavigationItemIcon,
+)
+from kivymd.app import MDApp
+
+
+class BaseMDNavigationItem(MDNavigationItem):
+    # See https://kivymd.readthedocs.io/en/latest/components/navigation-bar/
+    icon = StringProperty()
+    text = StringProperty()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.add_widget(MDNavigationItemIcon(icon=self.icon))
+        self.add_widget(MDNavigationItemLabel(text=self.text))
+
+
+class BaseScreen(MDScreen):
+    image_size = StringProperty()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.add_widget(
-            Button(text='Login', size_hint=(.15, .10), pos_hint={'center_x': .5, 'center_y': .25})
+            FitImage(
+                source=f"https://picsum.photos/{self.image_size}/{self.image_size}",
+                size_hint=(0.9, 0.9),
+                pos_hint={"center_x": 0.5, "center_y": 0.5},
+                radius=dp(24),
+            ),
         )
 
-class PantryPal(App):
+
+class Example(MDApp):
+    def on_switch_tabs(
+        self,
+        bar: MDNavigationBar,
+        item: MDNavigationItem,
+        item_icon: str,
+        item_text: str,
+    ):
+        self.root.get_ids().screen_manager.current = item_text
+
     def build(self):
-        self.root = root = LoginScreen()
-        root.bind(size=self._update_rect, pos=self._update_rect)
+        return MDBoxLayout(
+            MDScreenManager(
+                BaseScreen(
+                    name="Recipe Generator",
+                    image_size="700"
+                ),
+                BaseScreen(
+                    name="My Pantry",
+                    image_size="600",
+                ),
+                BaseScreen(
+                    name="Home",
+                    image_size="1024",
+                ),
+                BaseScreen(
+                    name="Grocery List",
+                    image_size="800",
+                ),
+                BaseScreen(
+                    name="Coupons",
+                    image_size="900"
+                ),
+                id="screen_manager",
+            ),
+            MDNavigationBar(
+                BaseMDNavigationItem(
+                    icon="pot-steam",
+                    text="Recipe Generator",
+                ),
+                BaseMDNavigationItem(
+                    icon="food-variant",
+                    text="My Pantry",
+                ),
+                BaseMDNavigationItem(
+                    icon="home",
+                    text="Home",
+                    active=True,
+                ),
+                BaseMDNavigationItem(
+                    icon="format-list-bulleted",
+                    text="Grocery List",
+                ),
+                BaseMDNavigationItem(
+                    icon="tag",
+                    text="Coupons"
+                ),
+                on_switch_tabs=self.on_switch_tabs,
+            ),
+            orientation="vertical",
+            md_bg_color=self.theme_cls.backgroundColor,
+        )
 
-        with root.canvas.before:
-            Color(255, 255, 255, 1)
-            self.rect = Rectangle(size=root.size, pos=root.pos)
-        return root
 
-    def _update_rect(self, instance, value):
-        self.rect.pos = instance.pos
-        self.rect.size = instance.size
-
-if __name__ == '__main__':
-    PantryPal().run()
+Example().run()
