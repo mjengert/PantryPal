@@ -38,11 +38,11 @@ expiration_times = {
 class Item:
     def __init__(self, name):
         self.name = name.lower()
-        self.itemType = self.getType()
+        self.itemType = self.findType()
         self.expiration = ""
     
     #Get grocery type from list
-    def getType(self):
+    def findType(self):
         itemCat="Unknown"
         for category, items in food_expiration.items():
             for item in items:
@@ -53,15 +53,20 @@ class Item:
     
     def getName(self):
         return self.name
-    
+
+    def getType(self):
+        return self.itemType
     #return expiration date
     def getExpiration(self):
-        return self.expiration
+        if (self.expiration):
+            return f"Expires {self.expiration}"
+
+        return " "
     
     #Get expiration date from list   
     def calcExpiration(self):
         if self.itemType in expiration_times:
             days_until_expire = expiration_times[self.itemType]
             expiration_date = datetime.today() + timedelta(days=days_until_expire)
-            self.expiration = expiration_date.strftime("%Y-%m-%d")
+            self.expiration = expiration_date.strftime("%m-%d-%Y")
         return "N/A"
