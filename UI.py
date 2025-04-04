@@ -14,7 +14,19 @@ from kivymd.uix.navigationbar.navigationbar import (
 )
 from kivymd.app import MDApp
 
+from kivymd.uix.list import MDListItem, MDListItemHeadlineText, MDList, MDListItemTrailingCheckbox
+from kivymd.uix.screen import MDScreen
+from kivymd.app import MDApp
+from kivymd.uix.selectioncontrol import MDCheckbox
 
+from item import Item
+from groceryList import Grocery_List
+from pantryList import Pantry_List
+
+grocery_list = Grocery_List()
+pantry_list = Pantry_List()
+
+#################################### NAVIGATION BAR ####################################
 class BaseMDNavigationItem(MDNavigationItem):
     # See https://kivymd.readthedocs.io/en/latest/components/navigation-bar/
     icon = StringProperty()
@@ -25,9 +37,10 @@ class BaseMDNavigationItem(MDNavigationItem):
         self.add_widget(MDNavigationItemIcon(icon=self.icon))
         self.add_widget(MDNavigationItemLabel(text=self.text))
 
-
+############################### BASE SCREEN ####################################
 class BaseScreen(MDScreen):
     image_size = StringProperty()
+    #screen = MDScreen()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -40,8 +53,32 @@ class BaseScreen(MDScreen):
             ),
         )
 
+############################### GROCERY LIST SCREEN ####################################
+class GroceryListScreen(MDScreen):
 
-class Example(MDApp):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        md_list = MDList(pos_hint={'center_y': 0.7})
+
+        for i in range(grocery_list.getRange()):
+            md_list_item = MDListItem(
+                MDListItemHeadlineText(
+                    text=grocery_list.getItem(i).getName()
+                ),
+                MDListItemTrailingCheckbox(),
+               # on_release=self.on_tap_checkbox()
+            )
+            md_list.add_widget(md_list_item)
+
+        self.add_widget(md_list)
+
+    def on_tap_checkbox(self):
+        print("tapped checkbox")
+
+
+######################################### PANTRY PAL APP #####################################
+class PantryPalUI(MDApp):
     def on_switch_tabs(
         self,
         bar: MDNavigationBar,
@@ -50,6 +87,17 @@ class Example(MDApp):
         item_text: str,
     ):
         self.root.get_ids().screen_manager.current = item_text
+
+    def on_checkbox_change(
+            self,
+            screen: GroceryListScreen,
+            list: MDList,
+            item: MDListItem,
+            item_text: str,
+            item_checkbox: MDListItemTrailingCheckbox
+    ):
+        self.root.get_ids().screen_manager.current = item_checkbox
+
 
     def build(self):
         return MDBoxLayout(
@@ -66,9 +114,9 @@ class Example(MDApp):
                     name="Home",
                     image_size="1024",
                 ),
-                BaseScreen(
+                GroceryListScreen(
                     name="Grocery List",
-                    image_size="800",
+                    #image_size="800",
                 ),
                 BaseScreen(
                     name="Coupons",
@@ -105,4 +153,4 @@ class Example(MDApp):
         )
 
 
-Example().run()
+PantryPalUI().run()
