@@ -2,7 +2,7 @@ from item import Item
 from pantryList import Pantry_List
 class Grocery_List:
     def __init__(self):
-        self.items = []
+        self.items = ['apple', 'banana']
 
     def addToGrocery(self,item):
         self.items.append(item)
@@ -13,3 +13,9 @@ class Grocery_List:
     def checkOff(self,item, pantryList):
         self.items.remove(item)
         pantryList.addToPantry(item)
+
+    def getItem(self, index):
+        return self.items[index]
+
+    def getRange(self):
+        return len(self.items)
