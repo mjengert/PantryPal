@@ -1,0 +1,63 @@
+import os
+from scrapfly import ScrapflyClient, ScrapeConfig
+from bs4 import BeautifulSoup
+
+SCRAPFLY_API_KEY = "scp-test-9c8f6362dd6c4560ab47d820f11a2c03"
+scrapfly = ScrapflyClient(key=SCRAPFLY_API_KEY)
+
+def scrape_target_grocery_deals():
+    scrape_config = ScrapeConfig(
+        url="https://www.target.com/c/grocery-deals/-/N-k4uyq?type=products",
+        render_js=True,
+        wait_for_selector='[data-test="product-grid"]',
+        rendering_wait=8000,
+        auto_scroll=True,
+        asp=True,
+    )
+
+    result = scrapfly.scrape(scrape_config)
+    html_content = result.content
+
+    soup = BeautifulSoup(html_content, "html.parser")
+
+    product_grid = soup.select_one('[data-test="product-grid"]')
+    if not product_grid:
+        print("No product-grid found in the HTML.")
+        return []
+
+    product_cards = product_grid.select('[data-test*="ProductCardWrapper"]')
+    print(f"Found {len(product_cards)} product cards within the grid.")
+
+    products_data = []
+    for i, card in enumerate(product_cards, start=1):
+
+        title_el = card.select_one('[data-test="product-title"]')
+        if not title_el:
+            title_el = card.select_one('[data-test*="product-title"]')
+
+        price_el = card.select_one('[data-test="current-price"]')
+        if not price_el:
+            price_el = card.select_one('[data-test*="current-price"]')
+
+        promo_el = card.select_one('[data-test="first-regular-promo"]')
+
+        title = title_el.get_text(strip=True) if title_el else None
+        price = price_el.get_text(strip=True) if price_el else None
+        promo_message = promo_el.get_text(strip=True) if promo_el else None
+
+        products_data.append({
+            "title": title,
+            "price": price,
+            "promo": promo_message
+        })
+
+    return products_data
+
+if __name__ == "__main__":
+    try:
+        deals = scrape_target_grocery_deals()
+        print("Coupons (or Deals) Scraped:")
+        for idx, item in enumerate(deals, start=1):
+            print(f"{idx}. Title: {item['title']!r} | Price: {item['price']!r} | Promo: {item['promo']!r}")
+    except Exception as e:
+        print(f"Error during scraping: {e}")
