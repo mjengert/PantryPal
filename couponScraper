@@ -9,39 +9,28 @@ def scrape_target_grocery_deals():
     scrape_config = ScrapeConfig(
         url="https://www.target.com/c/grocery-deals/-/N-k4uyq?type=products",
         render_js=True,
-        wait_for_selector='[data-test="product-grid"]',
-        rendering_wait=8000,
+        wait_for_selector='[data-test*="ProductCardWrapper"]',
+        rendering_wait=11000,  # 20 seconds to load dynamic content
         auto_scroll=True,
-        asp=True,
     )
 
     result = scrapfly.scrape(scrape_config)
     html_content = result.content
 
     soup = BeautifulSoup(html_content, "html.parser")
-
-    product_grid = soup.select_one('[data-test="product-grid"]')
-    if not product_grid:
-        print("No product-grid found in the HTML.")
-        return []
-
-    product_cards = product_grid.select('[data-test*="ProductCardWrapper"]')
-    print(f"Found {len(product_cards)} product cards within the grid.")
+    product_cards = soup.select('[data-test*="ProductCardWrapper"]')
+    print(f"Found {len(product_cards)} product cards.")
 
     products_data = []
-    for i, card in enumerate(product_cards, start=1):
-
-        title_el = card.select_one('[data-test="product-title"]')
-        if not title_el:
-            title_el = card.select_one('[data-test*="product-title"]')
-
-        price_el = card.select_one('[data-test="current-price"]')
-        if not price_el:
-            price_el = card.select_one('[data-test*="current-price"]')
-
+    for card in product_cards:
+        title_el = card.select_one('[data-test*="product-title"]')
+        price_el = card.select_one('[data-test*="current-price"]')
         promo_el = card.select_one('[data-test="first-regular-promo"]')
 
-        title = title_el.get_text(strip=True) if title_el else None
+        if title_el is None or not title_el.get_text(strip=True):
+            continue
+
+        title = title_el.get_text(strip=True)
         price = price_el.get_text(strip=True) if price_el else None
         promo_message = promo_el.get_text(strip=True) if promo_el else None
 
@@ -56,8 +45,19 @@ def scrape_target_grocery_deals():
 if __name__ == "__main__":
     try:
         deals = scrape_target_grocery_deals()
-        print("Coupons (or Deals) Scraped:")
-        for idx, item in enumerate(deals, start=1):
-            print(f"{idx}. Title: {item['title']!r} | Price: {item['price']!r} | Promo: {item['promo']!r}")
+        if not deals:
+            print("No deals were scraped. Please try again later.")
+            exit()
+
+        search_query = input("Enter item name to search for coupons: ").lower().strip()
+
+        matching_deals = [deal for deal in deals if deal["title"] and search_query in deal["title"].lower()]
+
+        if matching_deals:
+            print(f"\nCoupons for '{search_query}':")
+            for idx, item in enumerate(matching_deals, start=1):
+                print(f"{idx}. Title: {item['title']!r} | Price: {item['price']!r} | Promo: {item['promo']!r}")
+        else:
+            print(f"\nNo coupons found for '{search_query}'.")
     except Exception as e:
         print(f"Error during scraping: {e}")
