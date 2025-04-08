@@ -1,5 +1,5 @@
 from kivy.metrics import dp
-from kivy.properties import StringProperty
+from kivy.properties import StringProperty, ListProperty
 from kivy.lang import Builder
 
 from kivymd.uix.fitimage import FitImage
@@ -14,10 +14,12 @@ from kivymd.uix.navigationbar.navigationbar import (
 )
 from kivymd.app import MDApp
 
-from kivymd.uix.list import MDListItem, MDListItemHeadlineText, MDList, MDListItemTrailingCheckbox
+from kivymd.uix.list import MDListItem, MDListItemHeadlineText, MDList, MDListItemTrailingCheckbox, \
+    MDListItemSupportingText, MDListItemTrailingIcon
 from kivymd.uix.screen import MDScreen
 from kivymd.app import MDApp
 from kivymd.uix.selectioncontrol import MDCheckbox
+from kivymd.uix.textfield import MDTextField, MDTextFieldHintText
 
 from item import Item
 from groceryList import Grocery_List
@@ -37,6 +39,10 @@ class BaseMDNavigationItem(MDNavigationItem):
         self.add_widget(MDNavigationItemIcon(icon=self.icon))
         self.add_widget(MDNavigationItemLabel(text=self.text))
 
+class CustomCheckbox(MDListItem):
+    pressed = ListProperty([0,0])
+
+
 ############################### BASE SCREEN ####################################
 class BaseScreen(MDScreen):
     image_size = StringProperty()
@@ -53,28 +59,95 @@ class BaseScreen(MDScreen):
             ),
         )
 
-############################### GROCERY LIST SCREEN ####################################
-class GroceryListScreen(MDScreen):
+############################### PANTRY LIST SCREEN ####################################
+class PantryListScreen(MDScreen):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         md_list = MDList(pos_hint={'center_y': 0.7})
 
+        if (pantry_list.getRange() == 0):
+            MDListItem(MDListItemHeadlineText(
+                text="Pantry is empty"
+            ))
+            self.add_widget(md_list)
+        else:
+            for i in range(pantry_list.getRange()):
+                md_list_item = MDListItem(
+                    MDListItemHeadlineText(
+                        text=pantry_list.getItem(i).getName()
+                    ),
+                    MDListItemSupportingText(
+                        text=pantry_list.getItem(i).getExpiration()
+                    ),
+                    MDListItemTrailingIcon(
+                        icon="trash-can-outline"
+                    )
+                )
+                md_list.add_widget(md_list_item)
+
+            self.add_widget(md_list)
+
+    def on_tap_checkbox(self):
+        print("tapped checkbox")
+
+############################### GROCERY LIST SCREEN ####################################
+class GroceryListScreen(MDScreen):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        searchBar = MDTextField(
+            MDTextFieldHintText(text="Search for grocery item"),
+            pos_hint={"center_x": 0.5, "center_y":0.9},
+            size_hint_x=0.8
+        )
+        self.add_widget(searchBar)
+
+        md_list = MDList(pos_hint={'center_y': 0.6})
+
         for i in range(grocery_list.getRange()):
+            checkbox = MDListItemTrailingCheckbox(),
             md_list_item = MDListItem(
                 MDListItemHeadlineText(
                     text=grocery_list.getItem(i).getName()
                 ),
-                MDListItemTrailingCheckbox(),
-               # on_release=self.on_tap_checkbox()
+                MDListItemTrailingCheckbox(on_active=self.on_checkbox_active,id=str(i)),
+
             )
+            #checkbox.bind(pressed=self.on_pressed)
             md_list.add_widget(md_list_item)
 
         self.add_widget(md_list)
 
-    def on_tap_checkbox(self):
-        print("tapped checkbox")
+    def on_checkbox_active(
+            self,
+            #screen: GroceryListScreen,
+            list: MDList,
+            item: MDListItem,
+            item_text: str,
+            item_checkbox: MDListItemTrailingCheckbox
+    ):
+        self.root.get_ids().screen_manager.current = item_text
+        item = grocery_list.getItemFromStr(item_text)
+        grocery_list.checkOff(item, pantry_list)
+        print(f"checked")
+
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            self.pressed = touch.pos
+            # we consumed the touch. return False here to propagate
+            # the touch further to the children.
+            return True
+        return super(MDListItemTrailingCheckbox, self).on_touch_down(touch)
+
+    def on_pressed(self, instance, pos):
+        #self.root.get_ids().screen_manager.current = item_text
+        #item = grocery_list.getItemFromStr(item_text)
+        #grocery_list.checkOff(item, pantry_list)
+        print(f"checked")
+        print('pressed at {pos}'.format(pos=pos))
 
 
 ######################################### PANTRY PAL APP #####################################
@@ -88,15 +161,9 @@ class PantryPalUI(MDApp):
     ):
         self.root.get_ids().screen_manager.current = item_text
 
-    def on_checkbox_change(
-            self,
-            screen: GroceryListScreen,
-            list: MDList,
-            item: MDListItem,
-            item_text: str,
-            item_checkbox: MDListItemTrailingCheckbox
-    ):
-        self.root.get_ids().screen_manager.current = item_checkbox
+
+
+
 
 
     def build(self):
@@ -106,9 +173,9 @@ class PantryPalUI(MDApp):
                     name="Recipe Generator",
                     image_size="700"
                 ),
-                BaseScreen(
+                PantryListScreen(
                     name="My Pantry",
-                    image_size="600",
+                    #image_size="600",
                 ),
                 BaseScreen(
                     name="Home",

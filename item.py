@@ -41,7 +41,7 @@ class Item:
     def __init__(self, name):
         self.name = name.lower()
         self.itemType = self.getType()
-        self.expiration = ""
+        self.expiration = "04/23/2025"
     
     #Get grocery type from list
     def getType(self):

@@ -19,3 +19,8 @@ class Grocery_List:
 
     def getRange(self):
         return len(self.items)
+
+    def getItemFromStr(self, str):
+        for item in self.items:
+            if item.name == str:
+                return item
