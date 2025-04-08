@@ -24,9 +24,24 @@ from kivymd.uix.textfield import MDTextField, MDTextFieldHintText
 from item import Item
 from groceryList import Grocery_List
 from pantryList import Pantry_List
+from UserData import *
+
+#****************** Pulling Data from Database *********************#
+userDataDict = getUserData("sample")
+username = userDataDict["username"]
+userGroceryList = userDataDict["grocery_list"]
+userPantryList = userDataDict["pantry_list"]
 
 grocery_list = Grocery_List()
 pantry_list = Pantry_List()
+
+for item in userGroceryList:
+    grocItem = Item(item)
+    grocery_list.addToGrocery(grocItem)
+
+for item in userPantryList:
+    pantryItem = Item(item)
+    pantry_list.addToPantry(pantryItem)
 
 #################################### NAVIGATION BAR ####################################
 class BaseMDNavigationItem(MDNavigationItem):
@@ -160,11 +175,6 @@ class PantryPalUI(MDApp):
         item_text: str,
     ):
         self.root.get_ids().screen_manager.current = item_text
-
-
-
-
-
 
     def build(self):
         return MDBoxLayout(

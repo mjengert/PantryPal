@@ -3,7 +3,7 @@ from item import Item
 
 class Pantry_List:
     def __init__(self):
-        self.items = [Item('Milk'), Item('Bread'), Item('Butter')]
+        self.items = []
     
     def addToPantry(self,item):
         self.items.append(item)

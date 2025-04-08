@@ -2,7 +2,7 @@ from item import Item
 from pantryList import Pantry_List
 class Grocery_List:
     def __init__(self):
-        self.items = [Item('Apples'), Item('Bananas'), Item('Oranges'), Item('Milk')]
+        self.items = []
 
     def addToGrocery(self,item):
         self.items.append(item)
