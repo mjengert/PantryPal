@@ -1,0 +1,5 @@
+beautifulsoup4~=4.13.3
+parsel~=1.10.0
+spoonacular~=2.0.2
+python-dotenv~=1.0.1
+scrapfly-sdk~=0.1.0
