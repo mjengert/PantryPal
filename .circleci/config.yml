@@ -30,7 +30,7 @@ jobs:
     workflow:
       # Define a workflow to run the job
       # See: https://circleci.com/docs/workflows/
-      version: 2
       run:
+        version: 2
         jobs:
           - run
