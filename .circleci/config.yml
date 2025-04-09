@@ -26,3 +26,11 @@ jobs:
             sudo apt-get install -y python3-pip python3-dev build-essential libssl-dev libffi-dev python3-setuptools
             pip3 install --upgrade pip
             pip3 install -r requirements.txt
+
+    workflow:
+      # Define a workflow to run the job
+      # See: https://circleci.com/docs/workflows/
+      version: 2
+      run:
+        jobs:
+          - run
