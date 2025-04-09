@@ -1,0 +1,21 @@
+version: 2.1
+
+jobs:
+  run:
+    docker:
+      - image: cimg/base:current
+
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y python3-pip python3-dev build-essential libssl-dev libffi-dev python3-setuptools
+            pip3 install --upgrade pip
+            pip3 install -r requirements.txt
+
+workflows:
+  pantrypal-ci:
+    jobs:
+      - run

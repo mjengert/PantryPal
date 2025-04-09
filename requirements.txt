@@ -1,0 +1,5 @@
+beautifulsoup4
+parsel
+spoonacular
+python-dotenv
+scrapfly-sdk
