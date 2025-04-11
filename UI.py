@@ -27,21 +27,10 @@ from pantryList import Pantry_List
 from UserData import *
 
 #****************** Pulling Data from Database *********************#
-userDataDict = getUserData("sample")
-username = userDataDict["username"]
-userGroceryList = userDataDict["grocery_list"]
-userPantryList = userDataDict["pantry_list"]
+user = UserData("sample")
 
-grocery_list = Grocery_List()
-pantry_list = Pantry_List()
-
-for item in userGroceryList:
-    grocItem = Item(item)
-    grocery_list.addToGrocery(grocItem)
-
-for item in userPantryList:
-    pantryItem = Item(item)
-    pantry_list.addToPantry(pantryItem)
+grocery_list = user.getGroceryList()
+pantry_list = user.getPantryList()
 
 #################################### NAVIGATION BAR ####################################
 class BaseMDNavigationItem(MDNavigationItem):
