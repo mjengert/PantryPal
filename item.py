@@ -38,10 +38,10 @@ expiration_times = {
     "Bread": 7
 }
 class Item:
-    def __init__(self, name):
+    def __init__(self, name, exp):
         self.name = name.lower()
         self.itemType = self.getType()
-        self.expiration = "04/23/2025"
+        self.expiration = exp
     
     #Get grocery type from list
     def getType(self):
