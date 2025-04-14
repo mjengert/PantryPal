@@ -1,0 +1,18 @@
+# api requirements
+python-dotenv
+
+# scraping requirements
+beautifulsoup4
+parsel
+scrapfly-sdk
+
+# database requirements
+pymongo
+
+# kivy requirements
+kivy
+kivymd
+
+# recipe generator requirements
+spoonacular
+

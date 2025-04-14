@@ -1,6 +1,8 @@
 
 from datetime import datetime, timedelta
 
+from kivymd.uix.list import MDListItemTrailingCheckbox
+
 # Dictionary mapping categories to expiration times
 food_expiration = {
     "Meat": ["beef", "pork", "lamb", "veal", "steak", "sirloin", "ribeye", "pork chops"],
@@ -38,11 +40,11 @@ expiration_times = {
 class Item:
     def __init__(self, name):
         self.name = name.lower()
-        self.itemType = self.findType()
-        self.expiration = ""
+        self.itemType = self.getType()
+        self.expiration = "04/23/2025"
     
     #Get grocery type from list
-    def findType(self):
+    def getType(self):
         itemCat="Unknown"
         for category, items in food_expiration.items():
             for item in items:
@@ -53,20 +55,15 @@ class Item:
     
     def getName(self):
         return self.name
-
-    def getType(self):
-        return self.itemType
+    
     #return expiration date
     def getExpiration(self):
-        if (self.expiration):
-            return f"Expires {self.expiration}"
-
-        return " "
+        return self.expiration
     
     #Get expiration date from list   
     def calcExpiration(self):
         if self.itemType in expiration_times:
             days_until_expire = expiration_times[self.itemType]
             expiration_date = datetime.today() + timedelta(days=days_until_expire)
-            self.expiration = expiration_date.strftime("%m-%d-%Y")
+            self.expiration = expiration_date.strftime("%Y-%m-%d")
         return "N/A"

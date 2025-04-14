@@ -1,4 +1,5 @@
 from item import Item
+from pantryList import Pantry_List
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.button import MDIconButton, MDButton, MDButtonText
 from kivymd.uix.label import MDLabel
@@ -6,8 +7,6 @@ from kivymd.uix.textfield import MDTextField, MDTextFieldHintText
 from kivymd.uix.gridlayout import MDGridLayout
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.scrollview import MDScrollView
-
-
 class Grocery_List:
     def __init__(self):
         self.items = {}
@@ -28,15 +27,23 @@ class Grocery_List:
         else:
             return False
 
+    def getItem(self, key):
+        return self.items[key]
+
+    def getRange(self):
+        return len(self.items)
+
+    def getItemFromStr(self, str):
+         return self.items[str]
 
 class GroceryScreen(MDScreen):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.grocery_list = Grocery_List()
 
-        self.layout = MDBoxLayout(orientation='vertical', _md_bg_color=(0.588, 0.702, 0.824, 0.25))
-        self.text_input = MDTextField(multiline=False, size_hint=(0.6, 0.1),_md_bg_color=(0.588, 0.702, 0.824, 0.75),
-                                    pos_hint={"center_x": 0.5},radius=[30, 30, 30, 30],halign="center")
+        self.layout = MDBoxLayout(orientation='vertical')
+        self.text_input = MDTextField(multiline=False, size_hint=(0.6, 0.1),pos_hint={"center_x": 0.5},
+                                      radius=[30, 30, 30, 30],halign="center")
         self.text_input.add_widget(MDTextFieldHintText(text='Enter a grocery item'))
 
         self.text_input.bind(on_text_validate=self.create_item)
@@ -55,8 +62,7 @@ class GroceryScreen(MDScreen):
 
         self.g_scroll_view.add_widget(self.g_list_layout)
 
-        self.title = MDLabel(text="Your Grocery List", pos_hint={"center_x": 0.5},padding='5sp', halign='center',size_hint=(1, 0.15),
-                                       text_color=(0.588, 0.702, 0.824, 1),_md_bg_color=(0.588, 0.702, 0.824, .1))
+        self.title = MDLabel(text="Your Grocery List", pos_hint={"center_x": 0.5},padding='5sp', halign='center',size_hint=(1, 0.15))
         self.title.font_size= '50sp'
         self.layout.add_widget(self.title)
         self.layout.add_widget(self.text_input)
