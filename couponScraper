@@ -1,63 +1,228 @@
 import os
 from scrapfly import ScrapflyClient, ScrapeConfig
 from bs4 import BeautifulSoup
+import re
+import time
 
 SCRAPFLY_API_KEY = "scp-test-9c8f6362dd6c4560ab47d820f11a2c03"
 scrapfly = ScrapflyClient(key=SCRAPFLY_API_KEY)
 
-def scrape_target_grocery_deals():
+def scrape_target(max_retries=3, wait_between_retries=5):
+    url = "https://www.target.com/c/grocery-deals/-/N-k4uyq?type=products"
+    
     scrape_config = ScrapeConfig(
-        url="https://www.target.com/c/grocery-deals/-/N-k4uyq?type=products",
+        url=url,
         render_js=True,
-        wait_for_selector='[data-test*="ProductCardWrapper"]',
-        rendering_wait=11000,  # 20 seconds to load dynamic content
         auto_scroll=True,
+        rendering_wait=5000,
+        wait_for_selector='[data-test*="ProductCardWrapper"]',
     )
+    
+    target_deals = []
+    # Loop to retry scraping if no product cards are found
+    for attempt in range(1, max_retries+1):        
+        result = scrapfly.scrape(scrape_config)
+        html_content = result.content
 
+        soup = BeautifulSoup(html_content, "html.parser")
+        product_cards = soup.select('[data-test*="ProductCardWrapper"]')
+
+        if len(product_cards) > 0:
+            for card in product_cards:
+                title_el = card.select_one('[data-test*="product-title"]')
+                price_el = card.select_one('[data-test*="current-price"]')
+                promo_el = card.select_one('[data-test="first-regular-promo"]')
+                
+                # Skip placeholder cards with no title
+                if title_el is None or not title_el.get_text(strip=True):
+                    continue
+                
+                title = title_el.get_text(strip=True)
+                price = price_el.get_text(strip=True) if price_el else None
+                promo_message = promo_el.get_text(strip=True) if promo_el else None
+
+                # If there's no promo, we skip this card
+                if not promo_message:
+                    continue
+
+                target_deals.append({
+                    "source": "Target",
+                    "title": title,
+                    "price": price,
+                    "promo": promo_message
+                })
+            
+            break
+        else:
+            if attempt < max_retries:
+                time.sleep(wait_between_retries)
+
+    return target_deals
+
+'''
+def scrape_publix():
+    scrape_config = ScrapeConfig(
+        url="https://www.publix.com/savings/digital-coupons/grocery",
+        render_js=True,
+        # Wait for the title elements to show up
+        wait_for_selector='div[data-qa-automation="prod-title"]',
+        rendering_wait=5000,
+        auto_scroll=True,
+        proxy_pool="public_datacenter_pool",
+        asp=True,
+    )
     result = scrapfly.scrape(scrape_config)
+    print(result.content[:2000])
     html_content = result.content
 
     soup = BeautifulSoup(html_content, "html.parser")
-    product_cards = soup.select('[data-test*="ProductCardWrapper"]')
-    print(f"Found {len(product_cards)} product cards.")
 
-    products_data = []
+    publix_coupons = []
+
+    # Select each coupon card container
+    coupon_cards = soup.select('div[data-qa-automation="coupon-card"]')
+    print(f"Found {len(coupon_cards)} coupon cards.")
+
+    for card in coupon_cards:
+        # Inside the card, find the title span
+        title_span = card.select_one('div[data-qa-automation="prod-title"] .title')
+        title_text = title_span.get_text(strip=True) if title_span else None
+
+        # Also inside this card, find the promo span with class that contains "description"
+        promo_span = card.select_one('span.description')
+        promo_text = promo_span.get_text(strip=True) if promo_span else None
+
+        if title_text or promo_text:
+            publix_coupons.append({
+                "source": "Publix",
+                "title": title_text,
+                "promo": promo_text
+            })
+
+    # Print out each coupon’s title and promo
+    for coupon in publix_coupons:
+        print(f"Title: {coupon['title']} | Promo: {coupon['promo']}")
+
+    return publix_coupons
+'''
+
+
+def scrape_walmart():
+    url = "https://www.walmart.com/shop/walmart-member-item-rewards/grocery?facet=reward_eligible%3AWalmart+Cash+eligible"
+    scrape_config = ScrapeConfig(
+        url=url,
+        render_js=True,
+        auto_scroll=True,
+        rendering_wait=5000,          
+        wait_for_selector='[data-item-id]'  
+    )
+
+    with ScrapflyClient(key=SCRAPFLY_API_KEY) as client:
+        result = client.scrape(scrape_config)
+    html_content = result.content
+
+    soup = BeautifulSoup(html_content, "html.parser")
+
+    # Select all product cards
+    product_cards = soup.select('[data-item-id]')
+
+    walmart_deals = []
+
     for card in product_cards:
-        title_el = card.select_one('[data-test*="product-title"]')
-        price_el = card.select_one('[data-test*="current-price"]')
-        promo_el = card.select_one('[data-test="first-regular-promo"]')
+        # Extract the product title
+        title_el = card.select_one('a span.w_iUH7')
+        if not title_el:
+            continue
+        title_text = title_el.get_text(strip=True)
 
-        if title_el is None or not title_el.get_text(strip=True):
+        # Extract the current/promotional price
+        current_price_el = None
+        for span in card.select('span'):
+            span_text = span.get_text(strip=True)
+            if "current price" in span_text.lower():
+                current_price_el = span
+                break
+
+        if current_price_el:
+            current_price_text = current_price_el.get_text(strip=True)
+            # Remove literal phrase "current price"
+            current_price_text = re.sub(r'(?i)current price\s*', '', current_price_text).strip()
+            # If also wanting to remove "Now" and only show the price, uncomment:
+            current_price_text = re.sub(r'(?i)now\s*', '', current_price_text).strip()
+        else:
+            current_price_text = None
+
+        # Extract the "Was" price if any
+        was_price_el = None
+        for span in card.select('span'):
+            span_text = span.get_text(strip=True)
+            if "was" in span_text.lower():
+                was_price_el = span
+                break
+        was_price_text = was_price_el.get_text(strip=True) if was_price_el else None
+
+        
+        # If  also waning to remove "Was", uncomment the next line:
+        was_price_text = re.sub(r'(?i)was\s*', '', was_price_text).strip() if was_price_text else None
+
+        if not was_price_text:
+            # Skip if theres no 'was' price
             continue
 
-        title = title_el.get_text(strip=True)
-        price = price_el.get_text(strip=True) if price_el else None
-        promo_message = promo_el.get_text(strip=True) if promo_el else None
-
-        products_data.append({
-            "title": title,
-            "price": price,
-            "promo": promo_message
+        # Build the final product dict
+        walmart_deals.append({
+            "source": "Walmart",
+            "title": title_text,
+            "price": was_price_text,
+            "promo": current_price_text
         })
 
-    return products_data
+    return walmart_deals
+
+
+
 
 if __name__ == "__main__":
-    try:
-        deals = scrape_target_grocery_deals()
-        if not deals:
-            print("No deals were scraped. Please try again later.")
-            exit()
+    # publix_coupons = scrape_publix() whenever i can get it working
+    target_deals = scrape_target()
+    walmart_coupons = scrape_walmart()
+    
+    # Combine into one list
+    combined_coupons = walmart_coupons + target_deals
 
-        search_query = input("Enter item name to search for coupons: ").lower().strip()
+    # If no coupons were scraped, exit
+    if not combined_coupons:
+        print("No coupons were scraped. Please try again later.")
+        exit()
 
-        matching_deals = [deal for deal in deals if deal["title"] and search_query in deal["title"].lower()]
+    # Print all coupons
+    print("\nAll Coupons Scraped:")
+    for idx, coupon in enumerate(combined_coupons, start=1):
+        print(
+            f"{idx}. ({coupon['source']}) "
+            f"Title: {coupon['title']!r} "
+            f"| Price: {coupon.get('price')!r} "
+            f"| Promo: {coupon.get('promo')!r}"
+        )
 
-        if matching_deals:
-            print(f"\nCoupons for '{search_query}':")
-            for idx, item in enumerate(matching_deals, start=1):
-                print(f"{idx}. Title: {item['title']!r} | Price: {item['price']!r} | Promo: {item['promo']!r}")
-        else:
-            print(f"\nNo coupons found for '{search_query}'.")
-    except Exception as e:
-        print(f"Error during scraping: {e}")
+    # Prompt user for a search query
+    search_query = input("\nEnter item name to search for coupons (e.g. 'cheetos'): ").lower().strip()
+
+    # Filter coupons where the query appears in the title
+    matching_coupons = [
+        c for c in combined_coupons
+        if c.get("title") and search_query in c["title"].lower()
+    ]
+
+    # Print matching coupons
+    if matching_coupons:
+        print(f"\nCoupons matching '{search_query}':")
+        for idx, coupon in enumerate(matching_coupons, start=1):
+            print(
+                f"{idx}. ({coupon['source']}) "
+                f"Title: {coupon['title']!r} "
+                f"| Price: {coupon.get('price')!r} "
+                f"| Promo: {coupon.get('promo')!r}"
+            )
+    else:
+        print(f"\nNo coupons found matching '{search_query}'.")
