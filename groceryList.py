@@ -1,5 +1,4 @@
 from item import Item
-from pantryList import Pantry_List
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.button import MDIconButton, MDButton, MDButtonText
 from kivymd.uix.label import MDLabel
@@ -7,6 +6,8 @@ from kivymd.uix.textfield import MDTextField, MDTextFieldHintText
 from kivymd.uix.gridlayout import MDGridLayout
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.scrollview import MDScrollView
+from kivymd.color_definitions import colors
+
 class Grocery_List:
     def __init__(self):
         self.items = {}
@@ -27,23 +28,16 @@ class Grocery_List:
         else:
             return False
 
-    def getItem(self, key):
-        return self.items[key]
-
-    def getRange(self):
-        return len(self.items)
-
-    def getItemFromStr(self, str):
-         return self.items[str]
 
 class GroceryScreen(MDScreen):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.grocery_list = Grocery_List()
 
+        self.light_primary = self.theme_cls.primaryColor[:3]+[.1]
         self.layout = MDBoxLayout(orientation='vertical')
-        self.text_input = MDTextField(multiline=False, size_hint=(0.6, 0.1),pos_hint={"center_x": 0.5},
-                                      radius=[30, 30, 30, 30],halign="center")
+        self.text_input = MDTextField(multiline=False, size_hint=(0.6, 0.1),
+                                    pos_hint={"center_x": 0.5},radius=[30, 30, 30, 30],halign="center")
         self.text_input.add_widget(MDTextFieldHintText(text='Enter a grocery item'))
 
         self.text_input.bind(on_text_validate=self.create_item)
@@ -57,12 +51,13 @@ class GroceryScreen(MDScreen):
             self.quick_selects.add_widget(quick_s_button)
 
         self.g_scroll_view = MDScrollView(size_hint=(0.8, 0.5), pos_hint={"center_x": 0.5})
-        self.g_list_layout = MDGridLayout(cols=2, spacing=10)
+        self.g_list_layout = MDGridLayout(cols=2, spacing=10,size_hint_y=None)
         self.g_list_layout.bind(minimum_height=self.g_list_layout.setter('height'))
 
         self.g_scroll_view.add_widget(self.g_list_layout)
 
-        self.title = MDLabel(text="Your Grocery List", pos_hint={"center_x": 0.5},padding='5sp', halign='center',size_hint=(1, 0.15))
+        self.title = MDLabel(text="Your Grocery List", pos_hint={"center_x": 0.5},padding='5sp', halign='center',
+                             size_hint=(1, 0.15),theme_text_color="Custom",text_color=self.theme_cls.primaryColor)
         self.title.font_size= '50sp'
         self.layout.add_widget(self.title)
         self.layout.add_widget(self.text_input)
@@ -79,12 +74,12 @@ class GroceryScreen(MDScreen):
 
             # create box to hold grocery item
             item_box = MDBoxLayout(orientation='horizontal', size_hint=(None, None),height=75,
-                                   width=self.g_list_layout.width * 0.5,radius=[25,25,25,25],
-                                   _md_bg_color=(0.588, 0.702, 0.824, .5))
+                                   width=self.g_list_layout.width * 0.49,radius=[25,25,25,25],
+                                   _md_bg_color=self.light_primary)
             check_button = MDIconButton(icon='check',valign='center')
             check_button.bind(on_press=lambda btn: self.check_off_item(new_item, item_box))
 
-            label = MDLabel(text=new_item.getName(), text_color=(0, 0, 0, 1), pos_hint={"center_x": 0.5},
+            label = MDLabel(text=new_item.getName(), text_color=self.theme_cls.primaryColor[:3]+[.9], pos_hint={"center_x": 0.5},
                             halign='center')
 
             delete_button = MDIconButton(icon='trash-can-outline', valign='center')
@@ -97,7 +92,8 @@ class GroceryScreen(MDScreen):
 
             self.g_list_layout.add_widget(item_box)
             self.text_input.text = ''
-
+            for item in self.pantry_list:
+                self.create_item(item)
     def create_item_quick(self, item_name):
         if item_name and item_name not in self.grocery_list.items.keys():
             new_item = Item(item_name)
@@ -105,12 +101,11 @@ class GroceryScreen(MDScreen):
 
             # create box to hold grocery item
             item_box = MDBoxLayout(orientation='horizontal', pos_hint={"center_y": 0.5},size_hint=(None, None),height=75,
-                                   width=self.g_list_layout.width * 0.5,radius=[25,25,25,25],
-                                   _md_bg_color=(0.588, 0.702, 0.824, .5))
+                                   width=self.g_list_layout.width * 0.49,radius=[25,25,25,25],_md_bg_color=self.light_primary)
             check_button = MDIconButton(icon='check', valign='center',pos_hint={"center_y": 0.5})
             check_button.bind(on_press=lambda btn: self.check_off_item(new_item, item_box))
 
-            label = MDLabel(text=new_item.getName(), color=(0, 0, 0, 1),pos_hint={"center_x": 0.5},
+            label = MDLabel(text=new_item.getName(), text_color=self.theme_cls.primaryColor[:3]+[.9],pos_hint={"center_x": 0.5},
                             halign='center')
 
             delete_button = MDIconButton(icon='trash-can-outline', valign='center', pos_hint={"center_y": 0.5})

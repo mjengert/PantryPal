@@ -1,8 +1,13 @@
 from kivy.metrics import dp
-from kivy.properties import StringProperty, ListProperty
+from kivy.properties import StringProperty, ListProperty, Clock
 from kivy.lang import Builder
+from kivy.uix.boxlayout import BoxLayout
+from kivymd.uix.appbar import MDTopAppBar, MDTopAppBarLeadingButtonContainer, MDActionTopAppBarButton, MDTopAppBarTitle
+from kivymd.uix.button import MDButton, MDButtonIcon, MDButtonText, MDIconButton
+from kivymd.uix.card import MDCard
 
 from kivymd.uix.fitimage import FitImage
+from kivymd.uix.label import MDLabel
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.boxlayout import MDBoxLayout
@@ -15,15 +20,20 @@ from kivymd.uix.navigationbar.navigationbar import (
 from kivymd.app import MDApp
 
 from kivymd.uix.list import MDListItem, MDListItemHeadlineText, MDList, MDListItemTrailingCheckbox, \
-    MDListItemSupportingText, MDListItemTrailingIcon
+    MDListItemSupportingText, MDListItemTrailingIcon, MDListItemLeadingAvatar, MDListItemTertiaryText
 from kivymd.uix.screen import MDScreen
 from kivymd.app import MDApp
+from kivymd.uix.scrollview import MDScrollView
 from kivymd.uix.selectioncontrol import MDCheckbox
+from kivymd.uix.stacklayout import MDStackLayout
 from kivymd.uix.textfield import MDTextField, MDTextFieldHintText
 
 from item import Item
+
 from groceryList import GroceryScreen
 from pantryList import PantryScreen
+from recipeGenerator import RecipeGenerator
+from couponScreen import CouponScreen
 from UserData import *
 
 #****************** Pulling Data from Database *********************#
@@ -63,95 +73,272 @@ class BaseScreen(MDScreen):
             ),
         )
 
-############################### PANTRY LIST SCREEN ####################################
-'''class PantryListScreen(MDScreen):
+################################ RECIPE GENERATOR SCREEN ####################################
+
+class RecipeGenScreen(MDScreen):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.addedMissing = False
 
-        md_list = MDList(pos_hint={'center_y': 0.7})
+        # creates a layout for the list to be added to
+        layout = MDBoxLayout(
+            orientation="vertical",
+            spacing=10,
+            padding=dp(10),
+        )
+        self.add_widget(layout)
 
-        if (pantry_list.getRange() == 0):
-            MDListItem(MDListItemHeadlineText(
-                text="Pantry is empty"
-            ))
-            self.add_widget(md_list)
+        # creates search bar
+        searchBar = MDTextField(
+            MDTextFieldHintText(text="Search for recipe"),
+            size_hint_x=0.8,
+            pos_hint={"center_x": 0.5, "center_y": 0.9},
+        )
+        layout.add_widget(searchBar)
+
+        # adds scroll functionality to the screen
+        scroll = MDScrollView()
+        layout.add_widget(scroll)
+
+        # creates a list to hold the recipes and add it to the scroll view
+        md_list = MDList(
+            pos_hint={'center_y': 0.7},
+            size_hint=(1, None),
+            height=dp(400),
+        )
+        scroll.add_widget(md_list)
+
+        # calling the recipe generator API
+        recipeGen = RecipeGenerator()
+
+        # get the ingredients from the pantry
+        ingredients = []
+        for i in range(pantry_list.getRange()):
+            ingredients.append(pantry_list.getItem(i).getName())
+
+        # get the recipes based on the ingredients
+        recipeGen.generateRecipe(ingredients)
+
+        # get recipe info from the API
+        for recipe in recipeGen.recipeList:
+            recipeGen.getRecipeInfo(recipe)
+
+        # if pantry list is empty, show default recipes
+        if recipeGen.recipeList == []:
+            md_list.add_widget(MDListItem(text='No recipes found'))
+
+        # if pantry list is not empty, show recipes based on pantry items
         else:
-            for i in range(pantry_list.getRange()):
+            for recipe in recipeGen.recipeList:
+                # creates a list item for each recipe
+                # display the recipe name
                 md_list_item = MDListItem(
+                    # display the recipe name
                     MDListItemHeadlineText(
-                        text=pantry_list.getItem(i).getName()
+                        text=recipe.getName()
                     ),
+                    # display the recipe image
+                    MDListItemLeadingAvatar(
+                        source=recipe.getImage()
+                    ),
+                    # display the recipe ingredients owned
                     MDListItemSupportingText(
-                        text=pantry_list.getItem(i).getExpiration()
+                        text="Owned Ingredients: " + recipe.ownedIngredients()
                     ),
-                    MDListItemTrailingIcon(
-                        icon="trash-can-outline"
-                    )
+                    # display the recipe ingredients missing
+                    MDListItemTertiaryText(
+                        text="Missing Ingredients: " + recipe.missingIngredients()
+                    ),
                 )
+
+                # adds button to automatically add missing ingredients to grocery list
+                addMissingButton = MDIconButton(
+                    icon="plus",
+                    style="filled",
+                    md_bg_color=self.theme_cls.secondaryColor,
+                    pos_hint={"center_x": 0.5, "center_y": 0.5},
+                )
+                # binds the buttons to their functions
+                addMissingButton.bind(on_release=lambda instance, r=recipe: self.missingIngredients(instance, r))
+                md_list_item.add_widget(addMissingButton)
+                md_list_item.bind(on_release=lambda instance, r=recipe: self.recipeInfo(r))
                 md_list.add_widget(md_list_item)
 
-            self.add_widget(md_list)
+    # function to display the recipe information when the recipe is clicked
+    def recipeInfo(self, recipe):
+        # check if recipe screen already exists
+        if self.manager.has_screen("Recipe Info"):
+            self.manager.remove_widget(self.manager.get_screen("Recipe Info"))
 
-    def on_tap_checkbox(self):
-        print("tapped checkbox")'''
+        # creates a new screen to display the recipe information
+        recipeInfoScreen = RecipeInfoScreen(name="Recipe Info", recipe=recipe)
+        self.manager.add_widget(recipeInfoScreen)
+        self.manager.transition.direction = "left"
+        self.manager.current = "Recipe Info"
 
-############################### GROCERY LIST SCREEN ####################################
-'''class GroceryListScreen(MDScreen):
+    # function to add or remove missing ingredients from grocery list
+    def missingIngredients(self, instance, recipe):
+        # check if the ingredients were already added to the grocery list; if so, remove them
+        if self.addedMissing:
+            self.deleteMissingIngredients(instance, recipe)
 
-    def __init__(self, *args, **kwargs):
+        # otherwise, add them to the grocery list
+        else:
+            self.addMissingIngredients(instance, recipe)
+
+    # function to add missing ingredients to grocery list, toggle icon, and announcement
+    def addMissingIngredients(self, instance, recipe):
+        self.toggleIcon(instance)
+        self.toggleAnnouncment("Missing ingredients added to grocery list")
+        self.addedMissing = True
+
+    # function to remove missing ingredients from grocery list, toggle icon, and announcement
+    def deleteMissingIngredients(self, instance, recipe):
+        self.toggleIcon(instance)
+        self.toggleAnnouncment("Missing ingredients removed from grocery list")
+        self.addedMissing = False
+
+    # function to toggle the icon of the button when pressed
+    def toggleIcon(self, instance):
+        if instance.icon == "plus":
+            instance.icon = "check"
+        else:
+            instance.icon = "plus"
+
+    # function to toggle the announcement message when button is pressed
+    def toggleAnnouncment(self, announcement):
+        # remove the previous announcement if it exists
+        if hasattr(self, announcement):
+            self.remove_widget(announcement)
+
+        # creates announcement message layout
+        self.layout = MDBoxLayout(
+            orientation="vertical",
+            size_hint=(0.3, None),
+            height=dp(50),
+            padding=dp(10),
+            md_bg_color=self.theme_cls.primaryColor,
+            pos_hint={"center_x": 0.5, "top": 0.95},
+        )
+
+        # creates the announcement message label
+        self.announcement = MDLabel(
+            text=announcement,
+            halign="center",
+            valign="middle",
+            theme_text_color="Custom",
+            text_color=(1, 1, 1, 1),
+        )
+
+        # adds the announcement message to the layout and sets timer to remove it
+        self.layout.add_widget(self.announcement)
+        self.add_widget(self.layout)
+        Clock.schedule_once(lambda dt: self.removeAnnouncement(), 3)
+
+    # function to remove the announcement message after 3 seconds
+    def removeAnnouncement(self):
+        # if the announcement exists, remove it and its layout
+        if hasattr(self, "layout"):
+            self.remove_widget(self.layout)
+            self.layout = None
+        if hasattr(self, "announcement"):
+            self.remove_widget(self.announcement)
+            self.announcement = None
+
+
+############################### RECIPE INFO SCREEN ####################################
+class RecipeInfoScreen(MDScreen):
+
+    def __init__(self, recipe, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        searchBar = MDTextField(
-            MDTextFieldHintText(text="Search for grocery item"),
-            pos_hint={"center_x": 0.5, "center_y":0.9},
-            size_hint_x=0.8
+        # creates a layout for the recipe info screen
+        layout = MDBoxLayout(
+            orientation="vertical",
+            spacing=10,
+            padding=dp(10),
         )
-        self.add_widget(searchBar)
+        self.add_widget(layout)
 
-        md_list = MDList(pos_hint={'center_y': 0.6})
-
-        for i in range(grocery_list.getRange()):
-            checkbox = MDListItemTrailingCheckbox(),
-            md_list_item = MDListItem(
-                MDListItemHeadlineText(
-                    text=grocery_list.getItem(i).getName()
+        # adds top bar to the screen
+        topBar = MDTopAppBar(
+            MDTopAppBarLeadingButtonContainer(
+                MDActionTopAppBarButton(
+                    icon="arrow-left",
+                    on_release=self.go_back,
                 ),
-                MDListItemTrailingCheckbox(on_active=self.on_checkbox_active,id=str(i)),
+                MDTopAppBarTitle(
+                    text="Back"
+                )
+            ),
+            md_bg_color=self.theme_cls.primaryColor,
+        )
+        layout.add_widget(topBar)
 
-            )
-            #checkbox.bind(pressed=self.on_pressed)
-            md_list.add_widget(md_list_item)
+        # adds scroll functionality to the screen
+        scroll = MDScrollView()
+        layout.add_widget(scroll)
 
-        self.add_widget(md_list)
+        # creates layout for the recipe info section
+        recipeInfoLayout = MDBoxLayout(
+            orientation="vertical",
+            adaptive_height=True,
+        )
+        recipeInfoLayout.bind(minimum_height=recipeInfoLayout.setter('height'))
+        scroll.add_widget(recipeInfoLayout)
 
-    def on_checkbox_active(
-            self,
-            #screen: GroceryListScreen,
-            list: MDList,
-            item: MDListItem,
-            item_text: str,
-            item_checkbox: MDListItemTrailingCheckbox
-    ):
-        self.root.get_ids().screen_manager.current = item_text
-        item = grocery_list.getItemFromStr(item_text)
-        grocery_list.checkOff(item, pantry_list)
-        print(f"checked")
+        # creates a label to display the recipe name
+        recipName = MDLabel(
+            text=recipe.getName(),
+            halign="center",
+            padding=dp(10),
+            adaptive_height=True,
+        )
+        recipeInfoLayout.add_widget(recipName)
 
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            self.pressed = touch.pos
-            # we consumed the touch. return False here to propagate
-            # the touch further to the children.
-            return True
-        return super(MDListItemTrailingCheckbox, self).on_touch_down(touch)
+        # display the recipe image
+        recipeImage = FitImage(
+            source=recipe.getImage(),
+            size_hint_y=None,
+            height=dp(400),
+            radius=dp(24),
+        )
+        recipeInfoLayout.add_widget(recipeImage)
 
-    def on_pressed(self, instance, pos):
-        #self.root.get_ids().screen_manager.current = item_text
-        #item = grocery_list.getItemFromStr(item_text)
-        #grocery_list.checkOff(item, pantry_list)
-        print(f"checked")
-        print('pressed at {pos}'.format(pos=pos))'''
+        # creates a label to display the recipe summary
+        summaryLabel = MDLabel(
+            text="Summary: " + recipe.getSummary(),
+            markup=True,
+            padding=dp(10),
+            adaptive_height=True,
+        )
+        recipeInfoLayout.add_widget(summaryLabel)
+
+        # display the recipe ingredients owned and missing
+        # missing ingredients displayed in red
+        ingredients = (
+                "[color=00C853]" + ", ".join(recipe.ownedIngredients()) + "[/color]\n"
+                                                                          "[color=F44336]" + ", ".join(
+            recipe.missingIngredients()) + "[/color]"
+        )
+        # creates a label to display the recipe ingredients
+        ingredientsLabel = MDLabel(
+            text="Ingredients: " + ingredients,
+            markup=True,
+            padding=dp(10),
+            adaptive_height=True,
+        )
+        recipeInfoLayout.add_widget(ingredientsLabel)
+
+
+    def go_back(self, *args):
+        self.manager.transition.direction = "right"
+        self.manager.current = "Recipe Generator"
+
+
+
+
 
 
 ######################################### PANTRY PAL APP #####################################
@@ -166,57 +353,76 @@ class PantryPalUI(MDApp):
         self.root.get_ids().screen_manager.current = item_text
 
     def build(self):
-        return MDBoxLayout(
-            MDScreenManager(
+        self.theme_cls.primary_palette = "Red"
+        self.screenmanager= MDScreenManager(
                 BaseScreen(
+                    name="Home",
+                    image_size="1024",
+                ),
+                RecipeGenScreen(
                     name="Recipe Generator",
-                    image_size="700"
                 ),
                 PantryScreen(
                     name="My Pantry",
                     #image_size="600",
                 ),
-                BaseScreen(
-                    name="Home",
-                    image_size="1024",
-                ),
                 GroceryScreen(
                     name="Grocery List",
                     #image_size="800",
                 ),
-                BaseScreen(
-                    name="Coupons",
-                    image_size="900"
+                CouponScreen(
+                    name="Coupons"
                 ),
                 id="screen_manager",
-            ),
+            )
+        Clock.schedule_once(self._prewarm_screens, 0.1)
+
+        return MDBoxLayout(
+            self.screen_manager,
             MDNavigationBar(
-                BaseMDNavigationItem(
-                    icon="pot-steam",
-                    text="Recipe Generator",
+            BaseMDNavigationItem(
+                icon="pot-steam",
+                text="Recipe Generator",
                 ),
-                BaseMDNavigationItem(
-                    icon="food-variant",
-                    text="My Pantry",
+            BaseMDNavigationItem(
+                icon="food-variant",
+                text="My Pantry",
                 ),
-                BaseMDNavigationItem(
-                    icon="home",
-                    text="Home",
-                    active=True,
+            BaseMDNavigationItem(
+                icon="home",
+                text="Home",
+                active=True,
                 ),
-                BaseMDNavigationItem(
-                    icon="format-list-bulleted",
-                    text="Grocery List",
+            BaseMDNavigationItem(
+                icon="format-list-bulleted",
+                text="Grocery List",
                 ),
-                BaseMDNavigationItem(
-                    icon="tag",
-                    text="Coupons"
+            BaseMDNavigationItem(
+                icon="tag",
+                text="Coupons"
                 ),
-                on_switch_tabs=self.on_switch_tabs,
+            on_switch_tabs=self.on_switch_tabs,
             ),
-            orientation="vertical",
-            md_bg_color=self.theme_cls.backgroundColor,
-        )
+        orientation="vertical",
+        md_bg_color=self.theme_cls.backgroundColor,
+    )
 
+    def _prewarm_screens(self, dt):
+        current_screen = self.screen_manager.current
 
+        # Swap to pantry screen to force layout
+        self.screen_manager.current = "My Pantry"
+        self.screen_manager.current = "Coupons"
+        # Immediately swap back to original screen
+        Clock.schedule_once(lambda dt: setattr(self.screen_manager, "current", current_screen), 0.1)
+
+    def on_start(self):
+
+        for store in self.screen_manager.get_screen("Coupons").coupons:
+            btn = MDButton(on_release=lambda x, s=store: self.screen_manager.get_screen("Coupons").filter_coupons(s),
+                           theme_width="Custom",style='outlined',height="56dp", size_hint_x=.5)
+            btn.add_widget(MDButtonText(text=store,pos_hint={"center_x": 0.5, "center_y": 0.5}))  # or MDButtonText if you're using it
+            self.screen_manager.get_screen("Coupons").store_buttons.add_widget(btn)
+
+        self.screen_manager.get_screen("Coupons").filter_coupons('Target')
 PantryPalUI().run()
