@@ -12,6 +12,7 @@ class UserData:
     def __init__(self, username):
         self.user = self.getUserData(username)
         self.username = self.user["username"]
+        self.password = self.user["password"]
         self.grocery = Grocery_List()
         self.pantry = Pantry_List()
 
@@ -47,6 +48,9 @@ class UserData:
 
     def getGroceryList(self):
         return self.grocery
+
+    def getPassword(self):
+        return self.password
 
     def addToGrocDB(self, item):
         new_item = {

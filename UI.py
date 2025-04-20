@@ -7,6 +7,7 @@ from kivymd.uix.button import MDButton, MDButtonIcon, MDButtonText, MDIconButton
 from kivymd.uix.card import MDCard
 
 from kivymd.uix.fitimage import FitImage
+from kivymd.uix.gridlayout import MDGridLayout
 from kivymd.uix.label import MDLabel
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.screenmanager import MDScreenManager
@@ -35,10 +36,15 @@ from recipeGenerator import RecipeGenerator
 from UserData import *
 
 #****************** Pulling Data from Database *********************#
-user = UserData("sample")
+#global user
+#global grocery_list
+#global pantry_list
+global isLoggedIn
+isLoggedIn = False
 
-grocery_list = user.getGroceryList()
+user = UserData("sample")
 pantry_list = user.getPantryList()
+grocery_list = user.getGroceryList()
 
 #################################### NAVIGATION BAR ####################################
 class BaseMDNavigationItem(MDNavigationItem):
@@ -70,6 +76,65 @@ class BaseScreen(MDScreen):
                 radius=dp(24),
             ),
         )
+
+############################### LOGIN SCREEN ####################################
+class LoginScreen(MDScreen):
+    image_size = StringProperty()
+    #screen = MDScreen()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.username = None
+        self.password = None
+        self.light_primary = self.theme_cls.primaryColor[:3] + [.1]
+        self.layout = MDBoxLayout(orientation='vertical')
+
+        self.username_input = MDTextField(multiline=False, size_hint=(0.6, 0.1),
+                                      pos_hint={"center_x": 0.5,"center_y": 0.4}, radius=[30, 30, 30, 30], halign="center", padding=(20, 10, 20, 10))
+        self.username_input.add_widget(MDTextFieldHintText(text='Username'))
+        self.username_input.bind(on_text_validate=self.login_name)
+
+        self.password_input = MDTextField(multiline=False, size_hint=(0.6, 0.1),
+                                      pos_hint={"center_x": 0.5, "center_y": 0.5}, radius=[30, 30, 30, 30], halign="center", padding=(20, 10, 20, 10))
+        self.password_input.add_widget(MDTextFieldHintText(text='Password'))
+        self.password_input.bind(on_text_validate=self.password_name)
+
+        self.title = MDLabel(text="Login to PantryPal", pos_hint={"center_x": 0.5}, padding='10sp', halign='center',
+                             size_hint=(1, 0.15), theme_text_color="Custom", text_color=self.theme_cls.primaryColor)
+        self.title.font_size = '50sp'
+
+        self.login_button = MDButton(
+                    MDButtonText(
+                        text="Login",
+                    ),
+                    style="elevated",
+                    pos_hint={"center_x": 0.5, "center_y": 0.5},
+                    #padding=(20, 10, 20, 10)
+                )
+        self.login_button.bind(on_press=self.try_login)
+
+        self.layout.add_widget(self.title)
+        self.layout.add_widget(self.username_input)
+        self.layout.add_widget(self.password_input)
+        self.layout.add_widget(self.login_button)
+
+        self.add_widget(self.layout)
+
+    def login_name(self, instance):
+        self.username = self.username_input.text.strip()
+
+    def password_name(self, instance):
+        self.password = self.password_input.text.strip()
+
+    def try_login(self, instance):
+        username = self.username_input.text.strip()
+        password = self.password_input.text.strip()
+        user = UserData(username)
+        if (user.getPassword() == password):
+            grocery_list = user.getGroceryList()
+            pantry_list = user.getPantryList()
+
 
 ################################ RECIPE GENERATOR SCREEN ####################################
 
@@ -440,7 +505,7 @@ class PantryPalUI(MDApp):
     def build(self):
         return MDBoxLayout(
             MDScreenManager(
-                BaseScreen(
+                LoginScreen(
                     name="Home",
                     image_size="1024",
                 ),
