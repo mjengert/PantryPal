@@ -35,7 +35,7 @@ class RecipeGenerator:
             # calling the API to get recipes based on the ingredients
             api_response = self.api_instance.search_recipes_by_ingredients(
                 ingredients=ingredientsStr,
-                number=7,
+                number=1,
                 ranking=2,
                 ignore_pantry=False
             )
@@ -76,7 +76,12 @@ class RecipeGenerator:
             api_response = self.api_instance.get_recipe_information(recipe.id)
             recipe.servings = api_response.servings
             recipe.cooking_time = api_response.ready_in_minutes
-            recipe.summary = api_response.summary
+            # fix the summary to remove the HTML tags
+            recipe.summary = api_response.summary.replace('<p>', '').replace('</p>', '')
+            recipe.summary = recipe.summary.replace('<b>', '').replace('</b>', '')
+            recipe.summary = recipe.summary.replace('<a>', '').replace('</a>', '')
+            recipe.summary = recipe.summary.replace('<i>', '').replace('</i>', '')
+            recipe.summary = recipe.summary.replace('<a', '')
             recipe.source_url = api_response.source_url
         else:
             return None
@@ -88,10 +93,12 @@ class Recipe:
         self.id = recipe.id
         self.title = recipe.title
         self.image = recipe.image
-        self.missed_ingredients = ', '.join(
+        self.missedIngredientsList = recipe.missed_ingredients
+        self.usedIngredientsList = recipe.used_ingredients
+        self.missedIngredientsStr = ', '.join(
             [ing.name for ing in recipe.missed_ingredients if ing.name]
         )
-        self.used_ingredients = ', '.join(
+        self.usedIngredientsStr = ', '.join(
             [ing.name for ing in recipe.used_ingredients if ing.name]
         )
         self.servings = 0
@@ -107,13 +114,21 @@ class Recipe:
     def getImage(self):
         return self.image
 
-    # function to get the recipe id
-    def ownedIngredients(self):
-        return self.used_ingredients
+    # function to get the owned recipe ingredients as a string
+    def ownedIngredientsStr(self):
+        return self.usedIngredientsStr
 
-    # function to get the recipe id
-    def missingIngredients(self):
-        return self.missed_ingredients
+    # function to get the missing recipe ingredients as a string
+    def missingIngredientsStr(self):
+        return self.missedIngredientsStr
+
+    # function to get the owned recipe ingredients as a list
+    def ownedIngredientsList(self):
+        return self.usedIngredientsList
+
+    # function to get the missing recipe ingredients as a list
+    def missingIngredientsList(self):
+        return self.missedIngredientsList
 
     # function to get the recipe id
     def getId(self):

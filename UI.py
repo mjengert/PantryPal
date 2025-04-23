@@ -209,11 +209,11 @@ class RecipeGenScreen(MDScreen):
                     ),
                     # display the recipe ingredients owned
                     MDListItemSupportingText(
-                        text="Owned Ingredients: " + recipe.ownedIngredients()
+                        text="Owned Ingredients: " + recipe.ownedIngredientsStr()
                     ),
                     # display the recipe ingredients missing
                     MDListItemTertiaryText(
-                        text="Missing Ingredients: " + recipe.missingIngredients()
+                        text="Missing Ingredients: " + recipe.missingIngredientsStr()
                     ),
                 )
 
@@ -257,12 +257,20 @@ class RecipeGenScreen(MDScreen):
         self.toggleIcon(instance)
         self.toggleAnnouncment("Missing ingredients added to grocery list")
         self.addedMissing = True
+        # add the missing ingredients to the grocery list
+        for ingredient in recipe.missingIngredientsList():
+            ig = ingredient.name
+            ingredientItem = Item(ig)
+            grocery_list.addToGrocery(ingredientItem)
+            # display new items in grocery list; uses grocery list screen class to add items
+            groceryListScreen = self.manager.get_screen("Grocery List")
+            groceryListScreen.create_item_quick(ig)
+
+
 
     # function to remove missing ingredients from grocery list, toggle icon, and announcement
     def deleteMissingIngredients(self, instance, recipe):
-        self.toggleIcon(instance)
-        self.toggleAnnouncment("Missing ingredients removed from grocery list")
-        self.addedMissing = False
+       pass
 
     # function to toggle the icon of the button when pressed
     def toggleIcon(self, instance):
@@ -373,7 +381,7 @@ class RecipeInfoScreen(MDScreen):
 
         # creates a label to display the recipe summary
         summaryLabel = MDLabel(
-            text="Summary: " + recipe.getSummary(),
+            text=recipe.getSummary(),
             markup=True,
             padding=dp(10),
             adaptive_height=True,
@@ -383,9 +391,9 @@ class RecipeInfoScreen(MDScreen):
         # display the recipe ingredients owned and missing
         # missing ingredients displayed in red
         ingredients = (
-                "[color=00C853]" + ", ".join(recipe.ownedIngredients()) + "[/color]\n"
-                                                                          "[color=F44336]" + ", ".join(
-            recipe.missingIngredients()) + "[/color]"
+                recipe.missingIngredientsStr()
+            + ", " +
+                recipe.ownedIngredientsStr()
         )
         # creates a label to display the recipe ingredients
         ingredientsLabel = MDLabel(
