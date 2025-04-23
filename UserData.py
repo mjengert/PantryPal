@@ -57,14 +57,16 @@ class UserData:
             "name": item.getName(),
             "exp": item.getExpiration()
         }
-        self.user["grocery_list"].insert_one(new_item)
+        #grocList = self.user["grocery_list"]
+        self.user.update({'$push': {"grocery_list" : {"name" : item.getName(), "exp" : item.getExpiration()}}})
 
     def addToPantryDB(self, item):
         new_item = {
             "name": item.getName(),
             "exp": item.getExpiration()
         }
-        self.user["pantry_list"].insert_one(new_item)
+        #panList = self.user["pantry_list"]
+        self.user.update({'$push': {'pantry_list': new_item}})
 
     #def delFromGrocDB(self, item):
 

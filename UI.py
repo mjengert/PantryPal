@@ -568,6 +568,8 @@ class GroceryListScreen(MDScreen):
             self.text_input.text = ''
             self.item_widgets[item_name] = item_box
 
+            user.addToGrocDB(new_item)
+
     def check_off_item(self, item, item_box):
         """Moves item from grocery list to pantry list and calculates expiration date"""
 
@@ -575,6 +577,7 @@ class GroceryListScreen(MDScreen):
         if grocery_list.checkOff(item, pantry_list):
             self.g_list_layout.remove_widget(item_box)
             pantry_screen.add_pantry_item(item)
+            user.addToPantryDB(item)
         else:
             self.g_list_layout.remove_widget(item_box)
             pantry_screen.update_item(item)
@@ -587,6 +590,8 @@ class GroceryListScreen(MDScreen):
     def add_database_items(self):
         for item in grocery_list.items:
             self.create_item_quick(item)
+
+        #user.addToGrocDB()
 ######################################### PANTRY PAL APP #####################################
 class PantryPalUI(MDApp):
     def on_switch_tabs(
