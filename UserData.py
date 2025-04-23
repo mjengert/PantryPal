@@ -1,4 +1,8 @@
+import datetime
+
 import pymongo
+from bson import ObjectId
+
 from item import Item
 from groceryList import Grocery_List
 from pantryList import Pantry_List
@@ -11,22 +15,28 @@ class UserData:
 
     def __init__(self, username):
         self.user = self.getUserData(username)
-        self.username = self.user["username"]
-        self.password = self.user["password"]
+        self.username = self.user[0]["username"]
+        self.password = self.user[0]["password"]
         self.grocery = Grocery_List()
         self.pantry = Pantry_List()
 
-        for item in self.user["grocery_list"]:
+        for item in self.user[0]["grocery_list"]:
             item_name = item.get("name")
             item_exp = item.get("exp")
-            exp_str = item_exp.strftime("%m/%d/%Y")
+            if (isinstance(item_exp, str)):
+                exp_str = item_exp
+            else:
+                exp_str = item_exp.strftime("%m/%d/%Y")
             groc_item = Item(item_name, exp_str)
             self.grocery.addToGrocery(groc_item)
 
-        for item in self.user["pantry_list"]:
+        for item in self.user[0]["pantry_list"]:
             item_name = item.get("name")
             item_exp = item.get("exp")
-            exp_str = item_exp.strftime("%m/%d/%Y")
+            if (isinstance(item_exp, str)):
+                exp_str = item_exp
+            else:
+                exp_str = item_exp.strftime("%m/%d/%Y")
             pan_item = Item(item_name, exp_str)
             self.pantry.addToPantry(pan_item)
 
@@ -41,7 +51,7 @@ class UserData:
         user = collection.find_one(query)
         #print(user)
         #client.close()
-        return user
+        return user, collection
 
     def getPantryList(self):
         return self.pantry
@@ -53,20 +63,22 @@ class UserData:
         return self.password
 
     def addToGrocDB(self, item):
-        new_item = {
-            "name": item.getName(),
-            "exp": item.getExpiration()
-        }
-        #grocList = self.user["grocery_list"]
-        self.user.update({'$push': {"grocery_list" : {"name" : item.getName(), "exp" : item.getExpiration()}}})
+        name = item.getName()
+        exp = datetime.datetime(2025, 4, 30).isoformat()
+        collection = self.user[1]
+        id = self.user[0]["_id"]
+        query_filter = {'_id': id}
+        update_operation = {'$push': { 'grocery_list': {"name": name, "exp": exp}}}
+        collection.update_one(query_filter, update_operation, upsert=True)
 
     def addToPantryDB(self, item):
-        new_item = {
-            "name": item.getName(),
-            "exp": item.getExpiration()
-        }
-        #panList = self.user["pantry_list"]
-        self.user.update({'$push': {'pantry_list': new_item}})
+        name = item.getName()
+        exp = datetime.datetime(2025, 4, 30).isoformat()
+        collection = self.user[1]
+        id = self.user[0]["_id"]
+        query_filter = {'_id': id}
+        update_operation = {'$push': {'pantry_list': {"name": name, "exp": exp}}}
+        collection.update_one(query_filter, update_operation, upsert=True)
 
     #def delFromGrocDB(self, item):
 

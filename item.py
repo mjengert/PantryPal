@@ -76,3 +76,6 @@ class Item:
     def setExpiration(self, date):
         expiration_date = datetime.strptime(date, "%m-%d-%Y")
         self.expiration = expiration_date.strftime("%m-%d-%Y")
+
+    def getExpDB(self):
+        return self.expiration

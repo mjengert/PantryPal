@@ -533,6 +533,7 @@ class GroceryListScreen(MDScreen):
         if item_name and item_name not in self.item_widgets:
             new_item = Item(item_name)
             grocery_list.addToGrocery(new_item)
+            user.addToGrocDB(new_item)
 
             # create box to hold grocery item
             item_box = MDBoxLayout(orientation='horizontal', size_hint=(0.49, None),height=75,
@@ -581,7 +582,7 @@ class GroceryListScreen(MDScreen):
             self.text_input.text = ''
             self.item_widgets[item_name] = item_box
 
-            user.addToGrocDB(new_item)
+
 
     def check_off_item(self, item, item_box):
         """Moves item from grocery list to pantry list and calculates expiration date"""
