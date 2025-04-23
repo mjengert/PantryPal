@@ -3,14 +3,14 @@ from item import Item
 
 class Pantry_List:
     def __init__(self):
-        self.items = []
-    
-    def addToPantry(self,item):
-        self.items.append(item)
-    
-    def removePantry(self,item):
-        self.items.remove(item)
-    
+        self.items = {}
+
+    def addToPantry(self, item):
+        self.items[item.getName()] = item
+
+    def removePantry(self, item):
+        del self.items[item.getName()]
+
     def display(self):
         """Display all pantry items."""
         if not self.items:
@@ -24,6 +24,8 @@ class Pantry_List:
 
     def getItem(self, index):
         return self.items[index]
-
+    def getItems(self):
+        return self.items
     def getExpiration(self, index):
         return self.items[index].getExpiration()
+

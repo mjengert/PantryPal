@@ -32,6 +32,8 @@ from kivymd.uix.textfield import MDTextField, MDTextFieldHintText
 from item import Item
 from groceryList import Grocery_List
 from pantryList import Pantry_List
+from couponScreen import  CouponScreen
+
 from recipeGenerator import RecipeGenerator
 from UserData import *
 
@@ -177,8 +179,8 @@ class RecipeGenScreen(MDScreen):
 
         # get the ingredients from the pantry
         ingredients = []
-        for i in range(pantry_list.getRange()):
-            ingredients.append(pantry_list.getItem(i).getName())
+        for key in pantry_list.items:
+            ingredients.append(key)
 
         # get the recipes based on the ingredients
         recipeGen.generateRecipe(ingredients)
@@ -402,95 +404,181 @@ class RecipeInfoScreen(MDScreen):
 
 ############################### PANTRY LIST SCREEN ####################################
 class PantryListScreen(MDScreen):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        md_list = MDList(pos_hint={'center_y': 0.7})
+        self.item_widgets = {}
+        self.layout = MDBoxLayout(orientation='vertical')
+        self.light_primary = self.theme_cls.primaryColor[:3] + [.1]
 
-        if (pantry_list.getRange() == 0):
-            MDListItem(MDListItemHeadlineText(
-                text="Pantry is empty"
-            ))
-            self.add_widget(md_list)
-        else:
-            for i in range(pantry_list.getRange()):
-                md_list_item = MDListItem(
-                    MDListItemHeadlineText(
-                        text=pantry_list.getItem(i).getName()
-                    ),
-                    MDListItemSupportingText(
-                        text=pantry_list.getItem(i).getExpiration()
-                    ),
-                    MDListItemTrailingIcon(
-                        icon="trash-can-outline"
-                    )
-                )
-                md_list.add_widget(md_list_item)
+        self.p_scroll_view = MDScrollView(size_hint=(0.8, 0.89), pos_hint={"center_x": 0.5})
+        self.p_list_layout = MDGridLayout(cols=2, spacing=10,padding=10,size_hint_y=None)
+        self.p_list_layout.bind(minimum_height=self.p_list_layout.setter('height'))
 
-            self.add_widget(md_list)
+        self.p_scroll_view.add_widget(self.p_list_layout)
 
-    def on_tap_checkbox(self):
-        print("tapped checkbox")
+        self.title=MDLabel(text="My Pantry",  pos_hint={"center_x": 0.5},padding='5sp', halign='center',
+                                       size_hint=(1, 0.11),theme_text_color="Custom",text_color=self.theme_cls.primaryColor)
+        self.title.font_size = '50sp'
+        self.layout.add_widget(self.title)
+        self.layout.add_widget(self.p_scroll_view)
+
+        self.add_widget(self.layout)
+        for item in pantry_list.items.values():
+            self.add_pantry_item(item)
+    def add_pantry_item(self, item):
+        #create box to hold pantry item
+        item_box = MDBoxLayout(orientation='horizontal', size_hint=(None,None), height=100,
+                               width=self.p_list_layout.width * 0.49 ,radius=[25,25,25,25],
+                               _md_bg_color=self.light_primary)
+
+        #box to vertically stack labels
+        label_box = MDBoxLayout(orientation='vertical', size_hint=(1,.9))
+        item_label = MDLabel(text= item.getName(),text_color=self.theme_cls.primaryColor[:3]+[.9],halign='center')
+        item_label.font_size='24sp'
+        exp_label = MDLabel(text=item.getExpiration(), text_color=self.theme_cls.primaryColor[:3]+[.5],
+                            halign='center')
+        exp_label.font_size='10sp'
+
+        delete_button = MDIconButton(icon='trash-can-outline',valign='center')
+        delete_button.bind(on_press=lambda btn: self.delete_item(item))
+
+        #add widgets to layout
+        label_box.add_widget(item_label)
+        label_box.add_widget(exp_label)
+        item_box.add_widget(label_box)
+        item_box.add_widget(delete_button)
+
+        self.p_list_layout.add_widget(item_box)
+        self.item_widgets[item.getName()] = item_box
+
+    def delete_item(self, item):
+        if item.getName() in self.item_widgets:
+            item_box = self.item_widgets[item.getName()]
+            self.p_list_layout.remove_widget(item_box)
+            pantry_list.removePantry(item)
+            del self.item_widgets[item.getName()]
+
+    def update_item(self, item):
+        self.delete_item(item)
+        item.calcExpiration()
+        pantry_list.addToPantry(item)
+        self.add_pantry_item(item)
+
+    def add_database_items(self):
+        for item in grocery_list.items.values():
+            self.add_pantry_item(item)
+
 
 ############################### GROCERY LIST SCREEN ####################################
 class GroceryListScreen(MDScreen):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        searchBar = MDTextField(
-            MDTextFieldHintText(text="Search for grocery item"),
-            pos_hint={"center_x": 0.5, "center_y":0.9},
-            size_hint_x=0.8
-        )
-        self.add_widget(searchBar)
+        self.light_primary = self.theme_cls.primaryColor[:3]+[.1]
+        self.layout = MDBoxLayout(orientation='vertical')
+        self.text_input = MDTextField(multiline=False, size_hint=(0.6, 0.1),
+                                    pos_hint={"center_x": 0.5},radius=[30, 30, 30, 30],halign="center")
+        self.text_input.add_widget(MDTextFieldHintText(text='Enter a grocery item'))
 
-        md_list = MDList(pos_hint={'center_y': 0.6})
+        self.text_input.bind(on_text_validate=self.create_item)
+        quick_selects = ['milk', 'eggs', 'bread', 'cereal', 'toilet paper', 'paper towels']
+        self.quick_selects =MDGridLayout(cols=3,size_hint=(0.6, 0.25),
+                                         pos_hint={"center_x": 0.5},padding=10,spacing=10)
+        for item in quick_selects:
+            quick_s_button = MDButton(theme_width="Custom",style='outlined',height="56dp", size_hint_x=.5)
+            quick_s_button.add_widget(MDButtonText(text=item))
+            quick_s_button.bind(on_press=lambda btn, qItem=item: self.create_item_quick(qItem))
+            self.quick_selects.add_widget(quick_s_button)
 
-        for i in range(grocery_list.getRange()):
-            checkbox = MDListItemTrailingCheckbox(),
-            md_list_item = MDListItem(
-                MDListItemHeadlineText(
-                    text=grocery_list.getItem(i).getName()
-                ),
-                MDListItemTrailingCheckbox(on_active=self.on_checkbox_active,id=str(i)),
+        self.g_scroll_view = MDScrollView(size_hint=(0.8, 0.5), pos_hint={"center_x": 0.5})
+        self.g_list_layout = MDGridLayout(cols=2, spacing=10,size_hint_y=None)
+        self.g_list_layout.bind(minimum_height=self.g_list_layout.setter('height'))
 
-            )
-            #checkbox.bind(pressed=self.on_pressed)
-            md_list.add_widget(md_list_item)
+        self.g_scroll_view.add_widget(self.g_list_layout)
 
-        self.add_widget(md_list)
+        self.title = MDLabel(text="Your Grocery List", pos_hint={"center_x": 0.5},padding='5sp', halign='center',
+                             size_hint=(1, 0.15),theme_text_color="Custom",text_color=self.theme_cls.primaryColor)
+        self.title.font_size= '50sp'
+        self.layout.add_widget(self.title)
+        self.layout.add_widget(self.text_input)
+        self.layout.add_widget(self.quick_selects)
+        self.layout.add_widget(self.g_scroll_view)
 
-    def on_checkbox_active(
-            self,
-            #screen: GroceryListScreen,
-            list: MDList,
-            item: MDListItem,
-            item_text: str,
-            item_checkbox: MDListItemTrailingCheckbox
-    ):
-        self.root.get_ids().screen_manager.current = item_text
-        item = grocery_list.getItemFromStr(item_text)
-        grocery_list.checkOff(item, pantry_list)
-        print(f"checked")
-
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            self.pressed = touch.pos
-            # we consumed the touch. return False here to propagate
-            # the touch further to the children.
-            return True
-        return super(MDListItemTrailingCheckbox, self).on_touch_down(touch)
-
-    def on_pressed(self, instance, pos):
-        #self.root.get_ids().screen_manager.current = item_text
-        #item = grocery_list.getItemFromStr(item_text)
-        #grocery_list.checkOff(item, pantry_list)
-        print(f"checked")
-        print('pressed at {pos}'.format(pos=pos))
+        self.add_widget(self.layout)
 
 
+    def create_item(self, instance):
+        item_name = self.text_input.text.strip()
+        if item_name and item_name not in grocery_list.items.keys():
+            new_item = Item(item_name)
+            grocery_list.addToGrocery(new_item)
+
+            # create box to hold grocery item
+            item_box = MDBoxLayout(orientation='horizontal', size_hint=(None, None),height=75,
+                                   width=self.g_list_layout.width * 0.49,radius=[25,25,25,25],
+                                   _md_bg_color=self.light_primary)
+            check_button = MDIconButton(icon='check',valign='center')
+            check_button.bind(on_press=lambda btn: self.check_off_item(new_item, item_box))
+
+            label = MDLabel(text=new_item.getName(), text_color=self.theme_cls.primaryColor[:3]+[.9], pos_hint={"center_x": 0.5},
+                            halign='center')
+
+            delete_button = MDIconButton(icon='trash-can-outline', valign='center')
+            delete_button.bind(on_press=lambda btn: self.delete_item(new_item, item_box))
+
+            # add widgets to layout
+            item_box.add_widget(check_button)
+            item_box.add_widget(label)
+            item_box.add_widget(delete_button)
+
+            self.g_list_layout.add_widget(item_box)
+            self.text_input.text = ''
+
+    def create_item_quick(self, item_name):
+        if item_name and item_name not in grocery_list.items.keys():
+            new_item = Item(item_name)
+            grocery_list.addToGrocery(new_item)
+
+            # create box to hold grocery item
+            item_box = MDBoxLayout(orientation='horizontal', pos_hint={"center_y": 0.5},size_hint=(None, None),height=75,
+                                   width=self.g_list_layout.width * 0.49,radius=[25,25,25,25],_md_bg_color=self.light_primary)
+            check_button = MDIconButton(icon='check', valign='center',pos_hint={"center_y": 0.5})
+            check_button.bind(on_press=lambda btn: self.check_off_item(new_item, item_box))
+
+            label = MDLabel(text=new_item.getName(), text_color=self.theme_cls.primaryColor[:3]+[.9],pos_hint={"center_x": 0.5},
+                            halign='center')
+
+            delete_button = MDIconButton(icon='trash-can-outline', valign='center', pos_hint={"center_y": 0.5})
+            delete_button.bind(on_press=lambda btn: self.delete_item(new_item, item_box))
+
+            # add widgets to layout
+            item_box.add_widget(check_button)
+            item_box.add_widget(label)
+            item_box.add_widget(delete_button)
+
+            self.g_list_layout.add_widget(item_box)
+            self.text_input.text = ''
+
+    def check_off_item(self, item, item_box):
+        """Moves item from grocery list to pantry list and calculates expiration date"""
+
+        pantry_screen = self.manager.get_screen("My Pantry")
+        if grocery_list.checkOff(item, pantry_list):
+            self.g_list_layout.remove_widget(item_box)
+            pantry_screen.add_pantry_item(item)
+        else:
+            self.g_list_layout.remove_widget(item_box)
+            pantry_screen.update_item(item)
+
+    def delete_item(self, item, item_box):
+        """Removes item from grocery list"""
+        self.grocery_list.removeGrocery(item)
+        self.g_list_layout.remove_widget(item_box)
+
+    def add_database_items(self):
+        for item in grocery_list.items.values():
+            self.create_item(item)
 ######################################### PANTRY PAL APP #####################################
 class PantryPalUI(MDApp):
     def on_switch_tabs(
@@ -503,8 +591,8 @@ class PantryPalUI(MDApp):
         self.root.get_ids().screen_manager.current = item_text
 
     def build(self):
-        return MDBoxLayout(
-            MDScreenManager(
+        self.theme_cls.primary_palette = "Red"
+        self.screen_manager = MDScreenManager(
                 LoginScreen(
                     name="Home",
                     image_size="1024",
@@ -520,12 +608,16 @@ class PantryPalUI(MDApp):
                     name="Grocery List",
                     #image_size="800",
                 ),
-                BaseScreen(
+                CouponScreen(
                     name="Coupons",
-                    image_size="900"
+
                 ),
                 id="screen_manager",
-            ),
+            )
+        self.screen_manager.current = "Home"
+        Clock.schedule_once(self._prewarm_screens, 0.1)
+        return MDBoxLayout(
+            self.screen_manager,
             MDNavigationBar(
                 BaseMDNavigationItem(
                     icon="pot-steam",
@@ -553,6 +645,27 @@ class PantryPalUI(MDApp):
             orientation="vertical",
             md_bg_color=self.theme_cls.backgroundColor,
         )
+
+    def _prewarm_screens(self, dt):
+        current_screen = self.screen_manager.current
+
+        # Swap to pantry screen to force layout
+        self.screen_manager.current = "My Pantry"
+        self.screen_manager.current = "Coupons"
+        # Immediately swap back to original screen
+        Clock.schedule_once(lambda dt: setattr(self.screen_manager, "current", current_screen), 0.1)
+
+    def on_start(self):
+
+        for store in self.screen_manager.get_screen("Coupons").coupons:
+            btn = MDButton(on_release=lambda x, s=store: self.screen_manager.get_screen("Coupons").filter_coupons(s),
+                           theme_width="Custom",style='outlined',height="56dp", size_hint_x=.5)
+            btn.add_widget(MDButtonText(text=store,pos_hint={"center_x": 0.5, "center_y": 0.5}))  # or MDButtonText if you're using it
+            self.screen_manager.get_screen("Coupons").store_buttons.add_widget(btn)
+
+        self.screen_manager.get_screen("Coupons").filter_coupons('Target')
+        self.screen_manager.get_screen("Grocery List").add_database_items()
+        self.screen_manager.get_screen("My Pantry").add_database_items()
 
 
 PantryPalUI().run()

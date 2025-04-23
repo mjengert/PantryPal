@@ -1,26 +1,33 @@
 from item import Item
-from pantryList import Pantry_List
+from kivymd.uix.screen import MDScreen
+from kivymd.uix.button import MDIconButton, MDButton, MDButtonText
+from kivymd.uix.label import MDLabel
+from kivymd.uix.textfield import MDTextField, MDTextFieldHintText
+from kivymd.uix.gridlayout import MDGridLayout
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.scrollview import MDScrollView
+
+
 class Grocery_List:
     def __init__(self):
-        self.items = []
+        self.items = {}
+    def getItems(self):
+        return self.items
+    def addToGrocery(self, item):
+        if item not in self.items:
+            self.items[item.getName()] = item
 
-    def addToGrocery(self,item):
-        self.items.append(item)
-    
-    def removeGrocery(self,item):
-        self.items.remove(item)
-    
-    def checkOff(self,item, pantryList):
-        self.items.remove(item)
-        pantryList.addToPantry(item)
+    def removeGrocery(self, item):
+        del self.items[item.getName()]
 
-    def getItem(self, index):
-        return self.items[index]
+    def checkOff(self, item, pantryList):
+        self.removeGrocery(item)
+        if item.getName() not in pantryList.items.keys():
+            item.calcExpiration()
+            pantryList.addToPantry(item)
+            return True
+        else:
+            return False
 
-    def getRange(self):
-        return len(self.items)
 
-    def getItemFromStr(self, str):
-        for item in self.items:
-            if item.name == str:
-                return item
+
