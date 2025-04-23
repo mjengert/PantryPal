@@ -167,68 +167,15 @@ class RecipeGenScreen(MDScreen):
         layout.add_widget(scroll)
 
         # creates a list to hold the recipes and add it to the scroll view
-        md_list = MDList(
+        self.md_list = MDList(
             pos_hint={'center_y': 0.7},
             size_hint=(1, None),
             height=dp(400),
         )
-        scroll.add_widget(md_list)
+        scroll.add_widget(self.md_list)
 
-        # calling the recipe generator API
-        recipeGen = RecipeGenerator()
-
-        # get the ingredients from the pantry
-        ingredients = []
-        for key in pantry_list.items:
-            ingredients.append(key)
-
-        # get the recipes based on the ingredients
-        recipeGen.generateRecipe(ingredients)
-
-        # get recipe info from the API
-        for recipe in recipeGen.recipeList:
-            recipeGen.getRecipeInfo(recipe)
-
-        # if pantry list is empty, show default recipes
-        if recipeGen.recipeList == []:
-            md_list.add_widget(MDListItem(text='No recipes found'))
-
-        # if pantry list is not empty, show recipes based on pantry items
-        else:
-            for recipe in recipeGen.recipeList:
-                # creates a list item for each recipe
-                # display the recipe name
-                md_list_item = MDListItem(
-                    # display the recipe name
-                    MDListItemHeadlineText(
-                        text=recipe.getName()
-                    ),
-                    # display the recipe image
-                    MDListItemLeadingAvatar(
-                        source=recipe.getImage()
-                    ),
-                    # display the recipe ingredients owned
-                    MDListItemSupportingText(
-                        text="Owned Ingredients: " + recipe.ownedIngredientsStr()
-                    ),
-                    # display the recipe ingredients missing
-                    MDListItemTertiaryText(
-                        text="Missing Ingredients: " + recipe.missingIngredientsStr()
-                    ),
-                )
-
-                # adds button to automatically add missing ingredients to grocery list
-                addMissingButton = MDIconButton(
-                    icon="plus",
-                    style="filled",
-                    md_bg_color=self.theme_cls.secondaryColor,
-                    pos_hint={"center_x": 0.5, "center_y": 0.5},
-                )
-                # binds the buttons to their functions
-                addMissingButton.bind(on_release=lambda instance, r=recipe: self.missingIngredients(instance, r))
-                md_list_item.add_widget(addMissingButton)
-                md_list_item.bind(on_release=lambda instance, r=recipe: self.recipeInfo(r))
-                md_list.add_widget(md_list_item)
+        # create the recipes based on the ingredients in the pantry
+        self.createRecipes()
 
     # function to display the recipe information when the recipe is clicked
     def recipeInfo(self, recipe):
@@ -265,6 +212,67 @@ class RecipeGenScreen(MDScreen):
             # display new items in grocery list; uses grocery list screen class to add items
             groceryListScreen = self.manager.get_screen("Grocery List")
             groceryListScreen.create_item_quick(ig)
+
+    # generate the recipes based on the ingredients in the pantry and display them
+    def createRecipes(self):
+        # clear the list before adding new recipes
+        self.md_list.clear_widgets()
+
+        # calling the recipe generator API
+        recipeGen = RecipeGenerator()
+
+        # get the ingredients from the pantry
+        ingredients = []
+        for key in pantry_list.items:
+            ingredients.append(key)
+
+        # get the recipes based on the ingredients
+        recipeGen.generateRecipe(ingredients)
+
+        # get recipe info from the API
+        for recipe in recipeGen.recipeList:
+            recipeGen.getRecipeInfo(recipe)
+
+        # if pantry list is empty, show default recipes
+        if recipeGen.recipeList == []:
+            self.md_list.add_widget(MDListItem(text='No recipes found'))
+
+        # if pantry list is not empty, show recipes based on pantry items
+        else:
+            for recipe in recipeGen.recipeList:
+                # creates a list item for each recipe
+                # display the recipe name
+                md_list_item = MDListItem(
+                    # display the recipe name
+                    MDListItemHeadlineText(
+                        text=recipe.getName()
+                    ),
+                    # display the recipe image
+                    MDListItemLeadingAvatar(
+                        source=recipe.getImage()
+                    ),
+                    # display the recipe ingredients owned
+                    MDListItemSupportingText(
+                        text="Owned Ingredients: " + recipe.ownedIngredientsStr()
+                    ),
+                    # display the recipe ingredients missing
+                    MDListItemTertiaryText(
+                        text="Missing Ingredients: " + recipe.missingIngredientsStr()
+                    ),
+                )
+
+                # adds button to automatically add missing ingredients to grocery list
+                addMissingButton = MDIconButton(
+                    icon="plus",
+                    style="filled",
+                    md_bg_color=self.theme_cls.secondaryColor,
+                    pos_hint={"center_x": 0.5, "center_y": 0.5},
+                )
+                # binds the buttons to their functions
+                addMissingButton.bind(on_release=lambda instance, r=recipe: self.missingIngredients(instance, r))
+                md_list_item.add_widget(addMissingButton)
+                md_list_item.bind(on_release=lambda instance, r=recipe: self.recipeInfo(r))
+                self.md_list.add_widget(md_list_item)
 
 
 
@@ -465,6 +473,11 @@ class PantryListScreen(MDScreen):
             self.p_list_layout.remove_widget(item_box)
             pantry_list.removePantry(item)
             del self.item_widgets[item.getName()]
+        # update the recipe generator screen
+        recipe_gen_screen = self.manager.get_screen("Recipe Generator")
+        recipe_gen_screen.createRecipes()
+
+
 
     def update_item(self, item):
         self.delete_item(item)
