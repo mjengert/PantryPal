@@ -80,7 +80,18 @@ class UserData:
         update_operation = {'$push': {'pantry_list': {"name": name, "exp": exp}}}
         collection.update_one(query_filter, update_operation, upsert=True)
 
-    #def delFromGrocDB(self, item):
+    def delFromGrocDB(self, item):
+        name = item.getName().lower()
+        collection = self.user[1]
+        id = self.user[0]["_id"]
+        query_filter = {'_id': id}
+        update_operation = {'$pull': {'grocery_list': {"name": name}}}
+        collection.update_one(query_filter, update_operation)
 
-
-    #def delFromPantryDB(self, item):
+    def delFromPantryDB(self, item):
+        name = item.getName().lower()
+        collection = self.user[1]
+        id = self.user[0]["_id"]
+        query_filter = {'_id': id}
+        update_operation = {'$pull': {'pantry_list': {"name": name}}}
+        collection.update_one(query_filter, update_operation)

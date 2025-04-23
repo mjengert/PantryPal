@@ -473,9 +473,11 @@ class PantryListScreen(MDScreen):
             self.p_list_layout.remove_widget(item_box)
             pantry_list.removePantry(item)
             del self.item_widgets[item.getName()]
+            user.delFromPantryDB(item)
         # update the recipe generator screen
         recipe_gen_screen = self.manager.get_screen("Recipe Generator")
         recipe_gen_screen.createRecipes()
+
 
 
 
@@ -592,6 +594,7 @@ class GroceryListScreen(MDScreen):
             self.g_list_layout.remove_widget(item_box)
             pantry_screen.add_pantry_item(item)
             user.addToPantryDB(item)
+            user.delFromGrocDB(item)
         else:
             self.g_list_layout.remove_widget(item_box)
             pantry_screen.update_item(item)
@@ -600,6 +603,7 @@ class GroceryListScreen(MDScreen):
         """Removes item from grocery list"""
         grocery_list.removeGrocery(item)
         self.g_list_layout.remove_widget(item_box)
+        user.delFromGrocDB(item)
 
     def add_database_items(self):
         for item in grocery_list.items:
