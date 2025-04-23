@@ -424,12 +424,11 @@ class PantryListScreen(MDScreen):
         self.layout.add_widget(self.p_scroll_view)
 
         self.add_widget(self.layout)
-        for item in pantry_list.items.values():
-            self.add_pantry_item(item)
+
     def add_pantry_item(self, item):
         #create box to hold pantry item
-        item_box = MDBoxLayout(orientation='horizontal', size_hint=(None,None), height=100,
-                               width=self.p_list_layout.width * 0.49 ,radius=[25,25,25,25],
+        item_box = MDBoxLayout(orientation='horizontal', size_hint=(0.49, None), height=100,
+                               radius=[25,25,25,25],
                                _md_bg_color=self.light_primary)
 
         #box to vertically stack labels
@@ -466,7 +465,7 @@ class PantryListScreen(MDScreen):
         self.add_pantry_item(item)
 
     def add_database_items(self):
-        for item in grocery_list.items.values():
+        for item in pantry_list.items.values():
             self.add_pantry_item(item)
 
 
@@ -474,7 +473,7 @@ class PantryListScreen(MDScreen):
 class GroceryListScreen(MDScreen):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+        self.item_widgets = {}
         self.light_primary = self.theme_cls.primaryColor[:3]+[.1]
         self.layout = MDBoxLayout(orientation='vertical')
         self.text_input = MDTextField(multiline=False, size_hint=(0.6, 0.1),
@@ -510,13 +509,13 @@ class GroceryListScreen(MDScreen):
 
     def create_item(self, instance):
         item_name = self.text_input.text.strip()
-        if item_name and item_name not in grocery_list.items.keys():
+        if item_name and item_name not in self.item_widgets:
             new_item = Item(item_name)
             grocery_list.addToGrocery(new_item)
 
             # create box to hold grocery item
-            item_box = MDBoxLayout(orientation='horizontal', size_hint=(None, None),height=75,
-                                   width=self.g_list_layout.width * 0.49,radius=[25,25,25,25],
+            item_box = MDBoxLayout(orientation='horizontal', size_hint=(0.49, None),height=75,
+                                   radius=[25,25,25,25],
                                    _md_bg_color=self.light_primary)
             check_button = MDIconButton(icon='check',valign='center')
             check_button.bind(on_press=lambda btn: self.check_off_item(new_item, item_box))
@@ -534,15 +533,15 @@ class GroceryListScreen(MDScreen):
 
             self.g_list_layout.add_widget(item_box)
             self.text_input.text = ''
-
+            self.item_widgets[item_name] = item_box
     def create_item_quick(self, item_name):
-        if item_name and item_name not in grocery_list.items.keys():
+        if item_name and item_name not in self.item_widgets:
             new_item = Item(item_name)
             grocery_list.addToGrocery(new_item)
 
             # create box to hold grocery item
-            item_box = MDBoxLayout(orientation='horizontal', pos_hint={"center_y": 0.5},size_hint=(None, None),height=75,
-                                   width=self.g_list_layout.width * 0.49,radius=[25,25,25,25],_md_bg_color=self.light_primary)
+            item_box = MDBoxLayout(orientation='horizontal', pos_hint={"center_y": 0.5},size_hint=(0.49, None),height=75,
+                                   radius=[25,25,25,25],_md_bg_color=self.light_primary)
             check_button = MDIconButton(icon='check', valign='center',pos_hint={"center_y": 0.5})
             check_button.bind(on_press=lambda btn: self.check_off_item(new_item, item_box))
 
@@ -559,6 +558,7 @@ class GroceryListScreen(MDScreen):
 
             self.g_list_layout.add_widget(item_box)
             self.text_input.text = ''
+            self.item_widgets[item_name] = item_box
 
     def check_off_item(self, item, item_box):
         """Moves item from grocery list to pantry list and calculates expiration date"""
@@ -573,12 +573,12 @@ class GroceryListScreen(MDScreen):
 
     def delete_item(self, item, item_box):
         """Removes item from grocery list"""
-        self.grocery_list.removeGrocery(item)
+        grocery_list.removeGrocery(item)
         self.g_list_layout.remove_widget(item_box)
 
     def add_database_items(self):
-        for item in grocery_list.items.values():
-            self.create_item(item)
+        for item in grocery_list.items:
+            self.create_item_quick(item)
 ######################################### PANTRY PAL APP #####################################
 class PantryPalUI(MDApp):
     def on_switch_tabs(
@@ -616,6 +616,7 @@ class PantryPalUI(MDApp):
             )
         self.screen_manager.current = "Home"
         Clock.schedule_once(self._prewarm_screens, 0.1)
+
         return MDBoxLayout(
             self.screen_manager,
             MDNavigationBar(
@@ -652,6 +653,7 @@ class PantryPalUI(MDApp):
         # Swap to pantry screen to force layout
         self.screen_manager.current = "My Pantry"
         self.screen_manager.current = "Coupons"
+        self.screen_manager.current = "Grocery List"
         # Immediately swap back to original screen
         Clock.schedule_once(lambda dt: setattr(self.screen_manager, "current", current_screen), 0.1)
 
