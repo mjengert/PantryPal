@@ -1,5 +1,3 @@
-from item import Item
-
 
 class Pantry_List:
     def __init__(self):

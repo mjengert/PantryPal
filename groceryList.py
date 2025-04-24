@@ -1,12 +1,3 @@
-from item import Item
-from kivymd.uix.screen import MDScreen
-from kivymd.uix.button import MDIconButton, MDButton, MDButtonText
-from kivymd.uix.label import MDLabel
-from kivymd.uix.textfield import MDTextField, MDTextFieldHintText
-from kivymd.uix.gridlayout import MDGridLayout
-from kivymd.uix.boxlayout import MDBoxLayout
-from kivymd.uix.scrollview import MDScrollView
-
 
 class Grocery_List:
     def __init__(self):

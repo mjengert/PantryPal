@@ -1,15 +1,10 @@
 import datetime
-
-import pymongo
-from bson import ObjectId
-
 from item import Item
 from groceryList import Grocery_List
 from pantryList import Pantry_List
 from pymongo import MongoClient
 import os
 from dotenv import load_dotenv
-from dateutil import parser
 
 class UserData:
 

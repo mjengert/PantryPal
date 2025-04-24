@@ -1,7 +1,4 @@
-
 from datetime import datetime, timedelta
-
-from kivymd.uix.list import MDListItemTrailingCheckbox
 
 # Dictionary mapping categories to expiration times
 food_expiration = {
