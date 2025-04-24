@@ -1,15 +1,10 @@
 from kivy.metrics import dp
 from kivy.properties import StringProperty, ListProperty, Clock
-from kivy.lang import Builder
-from kivy.uix.boxlayout import BoxLayout
 from kivymd.uix.appbar import MDTopAppBar, MDTopAppBarLeadingButtonContainer, MDActionTopAppBarButton, MDTopAppBarTitle
 from kivymd.uix.button import MDButton, MDButtonIcon, MDButtonText, MDIconButton
-from kivymd.uix.card import MDCard
-
 from kivymd.uix.fitimage import FitImage
 from kivymd.uix.gridlayout import MDGridLayout
 from kivymd.uix.label import MDLabel
-from kivymd.uix.screen import MDScreen
 from kivymd.uix.screenmanager import MDScreenManager
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.navigationbar.navigationbar import (
@@ -18,29 +13,21 @@ from kivymd.uix.navigationbar.navigationbar import (
     MDNavigationItemLabel,
     MDNavigationItemIcon,
 )
-from kivymd.app import MDApp
 
-from kivymd.uix.list import MDListItem, MDListItemHeadlineText, MDList, MDListItemTrailingCheckbox, \
-    MDListItemSupportingText, MDListItemTrailingIcon, MDListItemLeadingAvatar, MDListItemTertiaryText
+from kivymd.uix.list import MDListItem, MDListItemHeadlineText, MDList, \
+    MDListItemSupportingText, MDListItemLeadingAvatar, MDListItemTertiaryText
 from kivymd.uix.screen import MDScreen
 from kivymd.app import MDApp
 from kivymd.uix.scrollview import MDScrollView
-from kivymd.uix.selectioncontrol import MDCheckbox
-from kivymd.uix.stacklayout import MDStackLayout
 from kivymd.uix.textfield import MDTextField, MDTextFieldHintText
 
-from item import Item
-from groceryList import Grocery_List
-from pantryList import Pantry_List
 from couponScreen import  CouponScreen
 
 from recipeGenerator import RecipeGenerator
 from UserData import *
 
 #****************** Pulling Data from Database *********************#
-#global user
-#global grocery_list
-#global pantry_list
+
 global isLoggedIn
 isLoggedIn = False
 
@@ -58,10 +45,6 @@ class BaseMDNavigationItem(MDNavigationItem):
         super().__init__(*args, **kwargs)
         self.add_widget(MDNavigationItemIcon(icon=self.icon))
         self.add_widget(MDNavigationItemLabel(text=self.text))
-
-class CustomCheckbox(MDListItem):
-    pressed = ListProperty([0,0])
-
 
 ############################### BASE SCREEN ####################################
 class BaseScreen(MDScreen):
