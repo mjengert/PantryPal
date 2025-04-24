@@ -98,7 +98,7 @@ class LoginScreen(MDScreen):
         self.username_input.bind(on_text_validate=self.login_name)
 
         self.password_input = MDTextField(multiline=False, size_hint=(0.6, 0.1),
-                                      pos_hint={"center_x": 0.5, "center_y": 0.5}, radius=[30, 30, 30, 30], halign="center", padding=(20, 10, 20, 10))
+                                      pos_hint={"center_x": 0.5, "center_y": 0.5}, radius=[30, 30, 30, 30], halign="center", padding=(20, 10, 20, 10), password=True)
         self.password_input.add_widget(MDTextFieldHintText(text='Password'))
         self.password_input.bind(on_text_validate=self.password_name)
 
