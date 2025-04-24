@@ -16,6 +16,7 @@ class UserData:
         self.pantry = Pantry_List()
 
         for item in self.user[0]["grocery_list"]:
+
             item_name = item.get("name")
             item_exp = item.get("exp")
             if (isinstance(item_exp, str)):

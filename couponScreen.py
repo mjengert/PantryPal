@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 from kivy.properties import StringProperty
 import time
 import re
-SCRAPFLY_API_KEY = "scp-test-9c8f6362dd6c4560ab47d820f11a2c03"
+SCRAPFLY_API_KEY = "scp-live-5aab0f52795344df9821b10c8a2353eb"
 scrapfly = ScrapflyClient(key=SCRAPFLY_API_KEY)
 class Coupon:
     def __init__(self,title,price,promo):
@@ -176,6 +176,7 @@ class CouponScreen(MDScreen):
         self.text_input = MDTextField(multiline=False, size_hint=(0.6, 0.1),pos_hint={"center_x": 0.5},
                                       radius=[30, 30, 30, 30],halign="center")
         self.text_input.add_widget(MDTextFieldHintText(text='Enter the name of an Item'))
+        self.text_input.bind(on_text_validate=self.search_coupons)
         self.store_buttons = MDGridLayout(cols=2,size_hint=(0.6, 0.1),
                                          pos_hint={"center_x": 0.5},padding=10,spacing=10)
 
@@ -196,7 +197,7 @@ class CouponScreen(MDScreen):
 
         self.add_widget(self.layout)
 
-    def filter_coupons(self, store):
+    def filter_coupons_store(self, store):
         self.selected_store = store
         container = self.c_list_layout
         container.clear_widgets()
@@ -221,3 +222,57 @@ class CouponScreen(MDScreen):
                             halign='center')
             item_box.add_widget(label)
             self.c_list_layout.add_widget(item_box)
+
+    def search_coupons(self, instance):
+        search_query = self.text_input.text.strip().lower()
+        self.c_list_layout.clear_widgets()
+
+        if not search_query:
+            return
+
+        found = False
+        for store, coupon_list in self.coupons.items():
+            for c in coupon_list:
+                # Assume c has a getPromo() method and title is part of it
+                promo_text = c.getPromo()
+                if search_query in promo_text.lower():
+                    item_box = MDBoxLayout(
+                        orientation='horizontal',
+                        size_hint=(0.5, None),
+                        height=125,
+                        radius=[25, 25, 25, 25],
+                        pos_hint={"center_x": 0.5},
+                        _md_bg_color=self.light_primary
+                    )
+                    label = MDLabel(
+                        text=promo_text,
+                        text_color=self.theme_cls.primaryColor[:3] + [.9],
+                        pos_hint={"center_x": 0.5},
+                        halign='center'
+                    )
+                    item_box.add_widget(label)
+                    self.c_list_layout.add_widget(item_box)
+                    found = True
+
+        if not found:
+            no_results_box = MDBoxLayout(
+                orientation='horizontal',
+                size_hint=(0.5, None),
+                height=125,
+                radius=[25, 25, 25, 25],
+                pos_hint={"center_x": 0.5},
+                _md_bg_color=self.light_primary
+            )
+            label = MDLabel(
+                text='No Coupons Found',
+                text_color=self.theme_cls.primaryColor[:3] + [.9],
+                pos_hint={"center_x": 0.5},
+                halign='center'
+            )
+            no_results_box.add_widget(label)
+            self.c_list_layout.add_widget(no_results_box)
+
+        self.text_input.text = ''
+
+
+

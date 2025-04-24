@@ -578,9 +578,12 @@ class GroceryListScreen(MDScreen):
             pantry_screen.add_pantry_item(item)
             user.addToPantryDB(item)
             user.delFromGrocDB(item)
+            recipe_gen_screen = self.manager.get_screen("Recipe Generator")
+            recipe_gen_screen.createRecipes()
         else:
             self.g_list_layout.remove_widget(item_box)
             pantry_screen.update_item(item)
+
 
     def delete_item(self, item, item_box):
         """Removes item from grocery list"""
@@ -605,7 +608,7 @@ class PantryPalUI(MDApp):
         self.root.get_ids().screen_manager.current = item_text
 
     def build(self):
-        self.theme_cls.primary_palette = "Red"
+        self.theme_cls.primary_palette = "Azure"
         self.screen_manager = MDScreenManager(
                 LoginScreen(
                     name="Home",
@@ -674,12 +677,12 @@ class PantryPalUI(MDApp):
     def on_start(self):
 
         for store in self.screen_manager.get_screen("Coupons").coupons:
-            btn = MDButton(on_release=lambda x, s=store: self.screen_manager.get_screen("Coupons").filter_coupons(s),
+            btn = MDButton(on_release=lambda x, s=store: self.screen_manager.get_screen("Coupons").filter_coupons_store(s),
                            theme_width="Custom",style='outlined',height="56dp", size_hint_x=.5)
             btn.add_widget(MDButtonText(text=store,pos_hint={"center_x": 0.5, "center_y": 0.5}))  # or MDButtonText if you're using it
             self.screen_manager.get_screen("Coupons").store_buttons.add_widget(btn)
 
-        self.screen_manager.get_screen("Coupons").filter_coupons('Target')
+        self.screen_manager.get_screen("Coupons").filter_coupons_store('Target')
         self.screen_manager.get_screen("Grocery List").add_database_items()
         self.screen_manager.get_screen("My Pantry").add_database_items()
 
