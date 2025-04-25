@@ -16,8 +16,8 @@ This feature works alongside the grocery list and recipe generator to round out 
 This feature is a standout feature in our application. This feature collects coupons from different stores currently walmart and target and displays them on the coupons screen. Using the two buttons with store names you can view the coupons from each store individually. This page also includes a search bar that can be used to filter the coupons based on a text input. The text box will also allow the user to compare store prices for a variety of stores for particular items. While this feature is not currently fully implemented with the user interface it is implemented on the backend.
 
 # Technical Details
-Technical Description
-Technical Details
+Runs from UI.py file
+
 Languages: Python
 Libraries: KivyMD
 APIs: Spoonacular, Scrapfly, MongoDB
